@@ -1,70 +1,100 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Warehouse, Search, Plus, RefreshCw, ArrowUp, ArrowDown, SlidersHorizontal, Loader2, X } from "lucide-react";
+import { Warehouse, Search, Plus, RefreshCw, ArrowUp, ArrowDown, SlidersHorizontal, Loader2, X, Boxes, ShoppingBag } from "lucide-react";
 
 interface InventoryLog {
   id: number;
-  type: "IN" | "OUT" | "ADJUST";
-  quantity: number;
-  beforeQty: number | null;
-  afterQty: number | null;
+  type: string;
+  quantity: number | string;
+  beforeQty: number | string | null;
+  afterQty: number | string | null;
   note: string | null;
   createdAt: string;
-  product: { name: string; code: string; stock: number };
+  product?: { name: string; code: string; stock: number } | null;
+  ingredient?: { name: string; code: string; stock: number; unit: string } | null;
   user: { name: string } | null;
 }
 
 interface Product { id: number; name: string; code: string; stock: number; minStock: number; }
+interface Ingredient { id: number; name: string; code: string; unit: string; stock: number; minStock: number; }
 
 const typeBadge: Record<string, string> = {
   IN: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  PURCHASE_IN: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
   OUT: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400",
+  ORDER_OUT: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400",
   ADJUST: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  ADJUSTMENT: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
 };
 
 export default function InventoryPage() {
   const [logs, setLogs] = useState<InventoryLog[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ productId: "", type: "IN", quantity: "", note: "" });
+  const [targetCategory, setTargetCategory] = useState<"INGREDIENT" | "PRODUCT">("INGREDIENT");
+  const [form, setForm] = useState({ productId: "", ingredientId: "", type: "IN", quantity: "", note: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/inventory");
-    if (res.ok) setLogs(await res.json());
-    setLoading(false);
+    try {
+      const res = await fetch("/api/inventory");
+      if (res.ok) setLogs(await res.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchProducts = async () => {
-    const res = await fetch("/api/products");
-    if (res.ok) setProducts(await res.json());
+  const fetchMasters = async () => {
+    try {
+      const [prodRes, ingRes] = await Promise.all([
+        fetch("/api/products"),
+        fetch("/api/ingredients")
+      ]);
+      if (prodRes.ok) setProducts(await prodRes.json());
+      if (ingRes.ok) setIngredients(await ingRes.json());
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  useEffect(() => { fetchLogs(); fetchProducts(); }, [fetchLogs]);
+  useEffect(() => { fetchLogs(); fetchMasters(); }, [fetchLogs]);
 
-  const filtered = logs.filter(l =>
-    l.product.name.toLowerCase().includes(search.toLowerCase()) ||
-    l.product.code.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = logs.filter(l => {
+    const itemName = l.ingredient?.name || l.product?.name || "";
+    const itemCode = l.ingredient?.code || l.product?.code || "";
+    return itemName.toLowerCase().includes(search.toLowerCase()) || itemCode.toLowerCase().includes(search.toLowerCase());
+  });
 
   const handleAdjust = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError("");
-    const res = await fetch("/api/inventory", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, quantity: parseInt(form.quantity) }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setError(data.error || "Failed"); setSaving(false); return; }
-    setShowModal(false);
-    setForm({ productId: "", type: "IN", quantity: "", note: "" });
-    fetchLogs(); fetchProducts();
-    setSaving(false);
+    const payload = targetCategory === "INGREDIENT" 
+      ? { ingredientId: form.ingredientId, type: form.type, quantity: parseFloat(form.quantity), note: form.note }
+      : { productId: form.productId, type: form.type, quantity: parseFloat(form.quantity), note: form.note };
+
+    try {
+      const res = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Failed"); setSaving(false); return; }
+      setShowModal(false);
+      setForm({ productId: "", ingredientId: "", type: "IN", quantity: "", note: "" });
+      fetchLogs(); fetchMasters();
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -74,9 +104,9 @@ export default function InventoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Warehouse size={24} className="text-indigo-600 dark:text-indigo-400" />
-            Inventory
+            Inventory & Stock Audit
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{logs.length} stock movement records</p>
+          <p className="text-sm text-slate-500 mt-0.5">{logs.length} stock movement audit records</p>
         </div>
         <div className="flex gap-2">
           <button onClick={fetchLogs} className="p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
@@ -91,10 +121,10 @@ export default function InventoryPage() {
       {/* Stock Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Products", value: products.length, icon: SlidersHorizontal, color: "indigo" },
-          { label: "Low Stock Items", value: products.filter(p => p.stock <= p.minStock).length, icon: ArrowDown, color: "rose" },
-          { label: "Total IN Today", value: logs.filter(l => l.type === "IN" && new Date(l.createdAt).toDateString() === new Date().toDateString()).reduce((s, l) => s + l.quantity, 0), icon: ArrowUp, color: "emerald" },
-          { label: "Total OUT Today", value: logs.filter(l => l.type === "OUT" && new Date(l.createdAt).toDateString() === new Date().toDateString()).reduce((s, l) => s + l.quantity, 0), icon: ArrowDown, color: "amber" },
+          { label: "Raw Ingredients", value: ingredients.length, icon: Boxes, color: "indigo" },
+          { label: "Low Stock Ingredients", value: ingredients.filter(i => Number(i.stock) <= Number(i.minStock)).length, icon: ArrowDown, color: "rose" },
+          { label: "Stock IN Logs Today", value: logs.filter(l => (l.type === "IN" || l.type === "PURCHASE_IN") && new Date(l.createdAt).toDateString() === new Date().toDateString()).length, icon: ArrowUp, color: "emerald" },
+          { label: "Stock OUT Logs Today", value: logs.filter(l => (l.type === "OUT" || l.type === "ORDER_OUT") && new Date(l.createdAt).toDateString() === new Date().toDateString()).length, icon: ArrowDown, color: "amber" },
         ].map(s => {
           const Icon = s.icon;
           const colors: Record<string, string> = { indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400", rose: "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400", emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400", amber: "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400" };
@@ -110,7 +140,7 @@ export default function InventoryPage() {
       {/* Search */}
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input type="text" placeholder="Filter by product name/code..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder="Filter by item name or code..." value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
       </div>
 
@@ -123,27 +153,53 @@ export default function InventoryPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {["Product", "Code", "Type", "Qty", "Before", "After", "Note", "By", "Date"].map(h => (
+                  {["Target Item", "Code", "Type", "Qty", "Before", "After", "Note", "By", "Date"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filtered.map(log => (
-                  <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{log.product.name}</td>
-                    <td className="px-4 py-3 font-mono text-slate-400 text-xs">{log.product.code}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${typeBadge[log.type]}`}>{log.type}</span>
-                    </td>
-                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">{log.quantity}</td>
-                    <td className="px-4 py-3 text-slate-500">{log.beforeQty ?? "-"}</td>
-                    <td className="px-4 py-3 text-slate-500">{log.afterQty ?? "-"}</td>
-                    <td className="px-4 py-3 text-slate-500 max-w-xs truncate">{log.note || "-"}</td>
-                    <td className="px-4 py-3 text-slate-500">{log.user?.name || "System"}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td>
-                  </tr>
-                ))}
+                {filtered.map(log => {
+                  const isIngredient = Boolean(log.ingredient);
+                  const itemName = log.ingredient?.name || log.product?.name || "Unknown";
+                  const itemCode = log.ingredient?.code || log.product?.code || "-";
+                  const unit = log.ingredient?.unit || "";
+
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-2">
+                          {isIngredient ? (
+                            <span className="p-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" title="Raw Ingredient">
+                              <Boxes size={14} />
+                            </span>
+                          ) : (
+                            <span className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500" title="Finished Product">
+                              <ShoppingBag size={14} />
+                            </span>
+                          )}
+                          <span>{itemName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-slate-400 text-xs">{itemCode}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${typeBadge[log.type] || "bg-slate-100 text-slate-700"}`}>
+                          {log.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">
+                        {Number(log.quantity)} <span className="text-xs text-slate-400 font-normal">{unit}</span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">{log.beforeQty !== null ? `${Number(log.beforeQty)} ${unit}` : "-"}</td>
+                      <td className="px-4 py-3 text-slate-500">{log.afterQty !== null ? `${Number(log.afterQty)} ${unit}` : "-"}</td>
+                      <td className="px-4 py-3 text-slate-500 max-w-xs truncate">{log.note || "-"}</td>
+                      <td className="px-4 py-3 text-slate-500">{log.user?.name || "System"}</td>
+                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                        {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {filtered.length === 0 && (
@@ -160,31 +216,79 @@ export default function InventoryPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-              <h2 className="font-bold text-slate-900 dark:text-slate-100">Adjust Stock</h2>
+              <h2 className="font-bold text-slate-900 dark:text-slate-100">Manual Stock Adjustment</h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X size={18} /></button>
             </div>
             <form onSubmit={handleAdjust} className="p-6 space-y-4">
               {error && <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 rounded-xl text-sm">{error}</div>}
-              {[{ label: "Product", key: "productId", type: "select" }, { label: "Type", key: "type", type: "typeSelect" }, { label: "Quantity", key: "quantity", type: "number" }, { label: "Note", key: "note", type: "text" }].map(f => (
-                <div key={f.key}>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">{f.label}</label>
-                  {f.type === "select" ? (
-                    <select value={form.productId} onChange={e => setForm(p => ({ ...p, productId: e.target.value }))} required className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
-                      <option value="">Select product</option>
-                      {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>)}
-                    </select>
-                  ) : f.type === "typeSelect" ? (
-                    <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
-                      <option value="IN">IN — Stock Received</option>
-                      <option value="OUT">OUT — Stock Removed</option>
-                      <option value="ADJUST">ADJUST — Manual Correction</option>
-                    </select>
-                  ) : (
-                    <input type={f.type} required={f.key !== "note"} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} min={f.type === "number" ? 1 : undefined}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none" />
-                  )}
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Category</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTargetCategory("INGREDIENT")}
+                    className={`py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 cursor-pointer ${
+                      targetCategory === "INGREDIENT"
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    <Boxes size={14} /> Raw Ingredient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetCategory("PRODUCT")}
+                    className={`py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 cursor-pointer ${
+                      targetCategory === "PRODUCT"
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    <ShoppingBag size={14} /> Finished Product
+                  </button>
                 </div>
-              ))}
+              </div>
+
+              {targetCategory === "INGREDIENT" ? (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Raw Ingredient</label>
+                  <select value={form.ingredientId} onChange={e => setForm(p => ({ ...p, ingredientId: e.target.value }))} required className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
+                    <option value="">Select ingredient...</option>
+                    {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name} (Stock: {ing.stock} {ing.unit})</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Product</label>
+                  <select value={form.productId} onChange={e => setForm(p => ({ ...p, productId: e.target.value }))} required className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
+                    <option value="">Select product...</option>
+                    {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Adjustment Type</label>
+                <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
+                  <option value="IN">IN — Add Stock</option>
+                  <option value="OUT">OUT — Deduct Stock</option>
+                  <option value="ADJUSTMENT">ADJUSTMENT — Inventory Audit</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Quantity</label>
+                <input type="number" step="0.01" min="0.01" required value={form.quantity} onChange={e => setForm(p => ({ ...p, quantity: e.target.value }))} placeholder="0.00"
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Note / Reason</label>
+                <input type="text" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} placeholder="Audit reason or details"
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none" />
+              </div>
+
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors">

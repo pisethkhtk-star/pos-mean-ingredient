@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Settings as SettingsIcon, Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useSettingsStore } from "@/store/settingsStore";
 
 export default function SettingsPage() {
+  const updateSettings = useSettingsStore((state) => state.updateSettings);
   const [form, setForm] = useState({
     storeName: "",
     storeAddress: "",
@@ -65,6 +67,8 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        updateSettings(data);
         setMessage({ type: "success", text: "Store settings updated successfully!" });
       } else {
         const data = await res.json();

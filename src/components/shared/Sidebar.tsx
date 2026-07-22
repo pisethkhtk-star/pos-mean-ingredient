@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import {
   LayoutDashboard,
   Calculator,
@@ -25,6 +26,7 @@ import {
   UserCog,
   Ticket,
   Shield,
+  Boxes,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -32,6 +34,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
+  const { settings, fetchSettings } = useSettingsStore();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   if (!user) return null;
 
@@ -54,6 +61,12 @@ export default function Sidebar() {
       name: "Products",
       href: "/products",
       icon: ShoppingBag,
+      roles: ["ADMIN", "MANAGER"],
+    },
+    {
+      name: "Ingredients",
+      href: "/ingredients",
+      icon: Boxes,
       roles: ["ADMIN", "MANAGER"],
     },
     {
@@ -138,7 +151,7 @@ export default function Sidebar() {
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
         {!isCollapsed && (
           <span className="text-lg font-bold bg-indigo-600 bg-clip-text text-transparent select-none">
-            {process.env.NEXT_PUBLIC_APP_NAME || "POS System"}
+            {settings?.storeName || process.env.NEXT_PUBLIC_APP_NAME || "POS System"}
           </span>
         )}
         <button

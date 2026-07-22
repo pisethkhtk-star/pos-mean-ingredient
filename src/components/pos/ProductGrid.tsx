@@ -60,9 +60,11 @@ export default function ProductGrid() {
     const currentSearch = search.trim();
     if (!currentSearch) return;
 
-    // 1. If products are already fetched, not loading, and match is available in state, use it
     if (!loadingProducts && products.length > 0) {
-      const productToAdd = products.find((p) => p.stock > 0);
+      const productToAdd = products.find((p) =>
+        p.code?.toLowerCase() === currentSearch.toLowerCase() ||
+        p.name?.toLowerCase().includes(currentSearch.toLowerCase())
+      );
       if (productToAdd) {
         addItem(productToAdd);
         setSearch("");
@@ -70,18 +72,14 @@ export default function ProductGrid() {
       }
     }
 
-    // 2. Otherwise, perform a quick direct fetch to catch any pending scans or state updates
     try {
       const url = `/api/products?query=${encodeURIComponent(currentSearch)}&categoryId=${selectedCatId}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) {
-          const productToAdd = data.find((p: any) => p.stock > 0);
-          if (productToAdd) {
-            addItem(productToAdd);
-            setSearch("");
-          }
+          addItem(data[0]);
+          setSearch("");
         }
       }
     } catch (err) {
@@ -98,52 +96,59 @@ export default function ProductGrid() {
         </div>
         <input
           type="text"
-          placeholder="Search products by name or code..."
+          placeholder="Search by product name or code/barcode (Press Enter to quick add)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              e.preventDefault();
               handleSearchEnter();
             }
           }}
-          className="block w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm shadow-sm"
+          className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 text-slate-800 dark:text-slate-200 shadow-sm"
         />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          >
+            ×
+          </button>
+        )}
       </div>
 
-      {/* Category selector row */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+      {/* Categories Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         <button
           onClick={() => setSelectedCatId("all")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
             selectedCatId === "all"
-              ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
-              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
+              ? "bg-indigo-600 text-white shadow-sm"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <Layers size={14} />
-          All Categories
+          <Layers size={14} /> All Products
         </button>
 
         {loadingCategories ? (
-          <Loader2 className="animate-spin text-slate-400" size={16} />
+          <div className="flex items-center gap-2">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="h-8 w-24 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
+            ))}
+          </div>
         ) : (
-          categories.map((cat) => {
-            const active = selectedCatId === String(cat.id);
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCatId(String(cat.id))}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
-                  active
-                    ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
-                }`}
-              >
-                {cat.name}
-              </button>
-            );
-          })
+          categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCatId(String(cat.id))}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                selectedCatId === String(cat.id)
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))
         )}
       </div>
 
@@ -170,8 +175,24 @@ export default function ProductGrid() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map((product) => {
-              const isOutOfStock = product.stock <= 0;
-              const isLowStock = product.stock <= product.minStock && !isOutOfStock;
+              const usesRecipe = product.hasRecipe !== false && product.ingredients && product.ingredients.length > 0;
+              let stockCount = 0;
+              let isOutOfStock = false;
+
+              if (usesRecipe) {
+                const portionsList = product.ingredients.map((pi: any) => {
+                  const stock = pi.ingredient ? Number(pi.ingredient.stock) : 0;
+                  const reqQty = Number(pi.quantity) || 1;
+                  return Math.floor(stock / reqQty);
+                });
+                stockCount = portionsList.length > 0 ? Math.min(...portionsList) : 0;
+                isOutOfStock = stockCount <= 0;
+              } else {
+                stockCount = Number(product.stock) || 0;
+                isOutOfStock = stockCount <= 0;
+              }
+
+              const isLowStock = stockCount > 0 && stockCount <= 5;
 
               return (
                 <button
@@ -182,17 +203,21 @@ export default function ProductGrid() {
                     isOutOfStock ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  {/* Stock tag */}
+                  {/* Stock / Ingredient tag */}
                   <span
                     className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold text-white z-10 ${
                       isOutOfStock
                         ? "bg-rose-500"
                         : isLowStock
                         ? "bg-amber-500"
-                        : "bg-slate-400 dark:bg-slate-700"
+                        : "bg-emerald-600"
                     }`}
                   >
-                    {isOutOfStock ? "OUT" : `${product.stock} left`}
+                    {isOutOfStock
+                      ? "OUT OF STOCK"
+                      : usesRecipe
+                      ? `${stockCount} PORTIONS`
+                      : `${stockCount} IN STOCK`}
                   </span>
 
                   {/* Product Image */}
@@ -222,11 +247,6 @@ export default function ProductGrid() {
                       <span className="text-base font-extrabold text-slate-900 dark:text-slate-100 font-mono">
                         ${Number(product.price).toFixed(2)}
                       </span>
-                      {isLowStock && (
-                        <span className="text-[9px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900">
-                          Low Stock
-                        </span>
-                      )}
                     </div>
                   </div>
                 </button>

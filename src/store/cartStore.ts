@@ -8,6 +8,7 @@ export interface CartItem {
   cost: number;
   quantity: number;
   stock: number;
+  ingredients?: any[];
 }
 
 export interface Customer {
@@ -39,7 +40,6 @@ interface CartState {
   setTaxRate: (rate: number) => void;
   setTaxEnabled: (enabled: boolean) => void;
   clearCart: () => void;
-  // Computed totals
   getTotals: () => {
     subtotal: number;
     discountValue: number;
@@ -48,19 +48,33 @@ interface CartState {
   };
 }
 
+export function getMaxAvailableStock(product: any): number {
+  if (product.hasRecipe !== false && product.ingredients && product.ingredients.length > 0) {
+    const portions = product.ingredients.map((pi: any) => {
+      const ingStock = pi.ingredient ? Number(pi.ingredient.stock) : 0;
+      const reqQty = Number(pi.quantity) || 1;
+      return Math.floor(ingStock / reqQty);
+    });
+    return portions.length > 0 ? Math.min(...portions) : 0;
+  }
+  return Number(product.stock) || 0;
+}
+
 export const useCartStore = create<CartState>((set, get) => ({
   cartItems: [],
   selectedCustomer: null,
   selectedDiscount: null,
-  taxRate: 10, // Default 10%
-  taxEnabled: false, // Default false
+  taxRate: 10,
+  taxEnabled: false,
+
   addItem: (product) => {
     const items = get().cartItems;
     const existing = items.find((item) => item.id === product.id);
+    const maxStock = getMaxAvailableStock(product);
 
     if (existing) {
-      if (existing.quantity >= product.stock) {
-        return; // Insufficient stock
+      if (existing.quantity >= maxStock) {
+        return; // Exceeds available portion stock
       }
       set({
         cartItems: items.map((item) =>
@@ -70,7 +84,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         ),
       });
     } else {
-      if (product.stock < 1) return; // No stock available
+      if (maxStock < 1) return; // No portion stock available
       set({
         cartItems: [
           ...items,
@@ -81,38 +95,45 @@ export const useCartStore = create<CartState>((set, get) => ({
             price: Number(product.price),
             cost: Number(product.cost),
             quantity: 1,
-            stock: product.stock,
+            stock: maxStock,
+            ingredients: product.ingredients || [],
           },
         ],
       });
     }
   },
+
   removeItem: (productId) => {
     set({
       cartItems: get().cartItems.filter((item) => item.id !== productId),
     });
   },
+
   updateQuantity: (productId, qty) => {
     if (qty <= 0) {
       get().removeItem(productId);
       return;
     }
+
     set({
       cartItems: get().cartItems.map((item) => {
         if (item.id === productId) {
-          const clampedQty = Math.min(qty, item.stock);
+          const maxStock = getMaxAvailableStock(item);
+          const clampedQty = Math.min(qty, maxStock);
           return { ...item, quantity: clampedQty };
         }
         return item;
       }),
     });
   },
+
   selectCustomer: (customer) => set({ selectedCustomer: customer }),
   selectDiscount: (discount) => set({ selectedDiscount: discount }),
   setTaxRate: (rate) => set({ taxRate: rate }),
   setTaxEnabled: (enabled) => set({ taxEnabled: enabled }),
   clearCart: () =>
     set({ cartItems: [], selectedCustomer: null, selectedDiscount: null }),
+
   getTotals: () => {
     const items = get().cartItems;
     const discount = get().selectedDiscount;
