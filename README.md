@@ -61,6 +61,18 @@ If you prefer to configure the system manually step-by-step:
 
 ---
 
+## ☕ Backend Options (ជម្រើស Backend)
+
+គម្រោងនេះមានជម្រើស Backend ចំនួនពីរ (រត់លើ Port `5000` ជា Drop-in replacement សម្រាប់ Next.js Proxy)៖
+
+1. **Node.js / Express Backend (`backend/`)**:
+   - ដំណើរការតាមរយៈ: `cd backend && npm run dev`
+2. **Spring Boot Java Backend (`backend-spring-boot/`)**:
+   - ប្រើប្រាស់ **Java 21**, **Spring Boot 3.3.5**, **Spring Data JPA**, **Spring Security (JWT)**
+   - ដំណើរការតាមរយៈ script: [run-spring-backend.bat](file:///d:/project/pos-mean-ingredient/run-spring-backend.bat) ឬ `cd backend-spring-boot && gradle bootRun`
+
+---
+
 ## 🐙 How to Commit & Push to Git (របៀបរុញកូដទៅកាន់ Git)
 
 Follow these steps to safely save and push your changes to the remote Git repository:

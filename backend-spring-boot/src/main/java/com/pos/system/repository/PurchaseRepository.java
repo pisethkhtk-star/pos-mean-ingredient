@@ -1,0 +1,13 @@
+package com.pos.system.repository;
+
+import com.pos.system.entity.Purchase;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface PurchaseRepository extends JpaRepository<Purchase, Integer> {
+    Optional<Purchase> findByReference(String reference);
+    List<Purchase> findAllByOrderByCreatedAtDesc();
+}

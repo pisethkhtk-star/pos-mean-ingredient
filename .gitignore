@@ -18,6 +18,17 @@ node_modules/
 
 # production
 /build
+**/build/
+
+# gradle & java
+.gradle/
+**/.gradle/
+bin/
+**/bin/
+.project
+.classpath
+.settings/
+*.class
 
 # misc
 .DS_Store
