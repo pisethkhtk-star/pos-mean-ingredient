@@ -107,9 +107,12 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
         throw new Error(data.error || "Checkout failed");
       }
 
-      // Success: Clear cart, call callback to show receipt
+      // Success: Clear cart, call callback, and refresh the page as requested
       clearCart();
-      onPaymentSuccess(data);
+      if (onPaymentSuccess) {
+        onPaymentSuccess(data);
+      }
+      window.location.reload();
     } catch (err: any) {
       setError(err.message || "Something went wrong during checkout");
     } finally {
