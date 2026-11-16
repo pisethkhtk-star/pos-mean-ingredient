@@ -23,6 +23,9 @@ export default function DashboardLayout({
     } else if (!loading && user && user.permissions && user.permissions.length > 0) {
       // Check if user has permission to visit current route
       if (pathname && !user.permissions.includes(pathname)) {
+        if (pathname === "/receive-stock" && user.permissions.includes("/purchases")) {
+          return;
+        }
         const fallback = user.permissions.includes("/pos")
           ? "/pos"
           : user.permissions[0] || "/login";

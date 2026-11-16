@@ -29,6 +29,7 @@ import {
   Ticket,
   Shield,
   Boxes,
+  PackagePlus,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -105,6 +106,13 @@ export default function Sidebar() {
       roles: ["ADMIN", "MANAGER"],
     },
     {
+      name: "Receive Stock",
+      translationKey: "nav.receiveStock",
+      href: "/receive-stock",
+      icon: PackagePlus,
+      roles: ["ADMIN", "MANAGER"],
+    },
+    {
       name: "Suppliers",
       translationKey: "nav.suppliers",
       href: "/suppliers",
@@ -156,7 +164,9 @@ export default function Sidebar() {
   ];
 
   const allowedMenuItems = menuItems.filter((item) =>
-    user.permissions ? user.permissions.includes(item.href) : item.roles.includes(user.role)
+    user.permissions
+      ? (user.permissions.includes(item.href) || (item.href === "/receive-stock" && user.permissions.includes("/purchases")))
+      : item.roles.includes(user.role)
   );
 
   return (
