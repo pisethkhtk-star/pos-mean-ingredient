@@ -105,7 +105,7 @@ export default function PurchasesPage() {
   const pendingCount = purchases.filter(p => (p.status || "RECEIVED") === "PENDING").length;
 
   const filteredPurchases = purchases.filter(p => {
-    const matchesQuery = p.reference.toLowerCase().includes(query.toLowerCase()) || 
+    const matchesQuery = p.reference.toLowerCase().includes(query.toLowerCase()) ||
       p.supplier?.name.toLowerCase().includes(query.toLowerCase());
     const currentStatus = p.status || "RECEIVED";
     const matchesStatus = statusFilter === "ALL" || currentStatus === statusFilter;
@@ -192,7 +192,7 @@ export default function PurchasesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!supplierId) return setError(t("purchases.selectSupplier"));
     const hasInvalidItem = items.some(i => {
       const hasTarget = i.itemType === "INGREDIENT" ? !!i.ingredientId : !!i.productId;
@@ -218,16 +218,21 @@ export default function PurchasesPage() {
       const res = await fetch("/api/purchases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ supplierId: parseInt(supplierId), note, items: payloadItems }),
+        body: JSON.stringify({
+          supplierId: parseInt(supplierId),
+          note,
+          status: "PENDING",
+          items: payloadItems,
+        }),
       });
-      
+
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || data.message || "Failed to save purchase");
         setSaving(false);
         return;
       }
-      
+
       setShowModal(false);
       setSuccessToast(t("purchases.createPurchaseOrder") + " OK! (Status: " + (t("purchases.statusPending")) + ")");
       setTimeout(() => setSuccessToast(""), 4000);
@@ -290,7 +295,7 @@ export default function PurchasesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Link
+          {/* <Link
             href="/receive-stock"
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
           >
@@ -301,7 +306,7 @@ export default function PurchasesPage() {
                 {pendingCount}
               </span>
             )}
-          </Link>
+          </Link> */}
           <button
             onClick={openAdd}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
@@ -334,11 +339,10 @@ export default function PurchasesPage() {
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                statusFilter === tab.id
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${statusFilter === tab.id
                   ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -405,7 +409,7 @@ export default function PurchasesPage() {
                       </td>
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2">
-                          <Truck size={14} className="text-slate-400"/>
+                          <Truck size={14} className="text-slate-400" />
                           {p.supplier?.name}
                         </div>
                       </td>
@@ -419,11 +423,10 @@ export default function PurchasesPage() {
                             const unit = isProduct ? "pcs" : (item.ingredient?.unit || "unit");
                             return (
                               <div key={idx} className="text-xs flex items-center gap-1.5 flex-wrap">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                  isProduct 
-                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800" 
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isProduct
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
                                     : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
-                                }`}>
+                                  }`}>
                                   {isProduct ? "Product" : "Ingredient"}
                                 </span>
                                 <strong className="text-slate-800 dark:text-slate-200">{name}</strong>: {Number(item.quantity)} {unit} @ ${Number(item.cost).toFixed(4)}/{unit}
@@ -489,7 +492,7 @@ export default function PurchasesPage() {
                 <X size={18} />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto flex-1">
               <form id="purchaseForm" onSubmit={handleSave} className="space-y-6">
                 {error && (
@@ -497,7 +500,7 @@ export default function PurchasesPage() {
                     {error}
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">
@@ -537,10 +540,10 @@ export default function PurchasesPage() {
                       onClick={addItemRow}
                       className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1"
                     >
-                      <Plus size={14}/> {t("purchases.addItemRow")}
+                      <Plus size={14} /> {t("purchases.addItemRow")}
                     </button>
                   </div>
-                  
+
                   <div className="space-y-3">
                     {items.map((item, index) => {
                       const matchedIng = ingredients.find(i => i.id.toString() === item.ingredientId);
@@ -666,13 +669,13 @@ export default function PurchasesPage() {
                             disabled={items.length === 1}
                             className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg disabled:opacity-30 cursor-pointer self-center"
                           >
-                            <X size={16}/>
+                            <X size={16} />
                           </button>
                         </div>
                       );
                     })}
                   </div>
-                  
+
                   <div className="mt-4 flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
                     <p className="text-xs text-slate-500">
                       ℹ️ Note: Saving this PO will create it in <strong>Pending</strong> status. Stock is intake-ready and added only when received in the Receive Stock screen.
