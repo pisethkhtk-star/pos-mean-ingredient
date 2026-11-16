@@ -181,9 +181,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "roles.savePermissions": "រក្សាទុកសិទ្ធិ",
 
     // Products Management
-    "products.title": "កាតាឡុកទំនិញ",
+    "products.title": "ទំនិញ",
     "products.subtitle": "បញ្ជីទំនិញ និងរូបមន្តគ្រឿងផ្សំ",
-    "products.configuredCount": "មុខទំនិញក្នុងកាតាឡុក",
+    "products.configuredCount": "មុខទំនិញ",
     "products.addProduct": "បន្ថែមទំនិញ",
     "products.editProduct": "កែប្រែទំនិញ",
     "products.searchPlaceholder": "ស្វែងរកតាមឈ្មោះ ឬកូដទំនិញ...",
@@ -262,6 +262,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "ingredients.costLabel": "ថ្លៃដើមក្នុង១ឯកតា ($)",
     "ingredients.initialStock": "ស្តុកដំបូង",
     "ingredients.minStockAlert": "ស្តុកអប្បបរមាប្រកាសអាសន្ន",
+    "ingredients.deleteAdminOnly": "មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិលុបគ្រឿងផ្សំ",
 
     // Categories
     "categories.title": "ប្រភេទផលិតផល",
@@ -718,6 +719,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "ingredients.costLabel": "Cost Per Unit ($)",
     "ingredients.initialStock": "Initial Stock",
     "ingredients.minStockAlert": "Min Stock Alert Threshold",
+    "ingredients.deleteAdminOnly": "Only Admin has permission to delete ingredients",
 
     // Categories
     "categories.title": "Product Categories",

@@ -655,9 +655,9 @@ export default function ReportsPage() {
             <BarChart3 size={26} className="text-indigo-600 dark:text-indigo-400" />
             {t("reports.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5">
+          {/* <p className="text-sm text-slate-500 mt-1.5">
             {t("reports.subtitle")}
-          </p>
+          </p> */}
         </div>
 
         {/* Export Buttons */}

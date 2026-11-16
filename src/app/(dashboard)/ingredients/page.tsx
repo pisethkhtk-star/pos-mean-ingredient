@@ -17,6 +17,7 @@ import {
   Sliders,
 } from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface Ingredient {
   id: number;
@@ -53,6 +54,8 @@ const emptyForm = {
 
 export default function IngredientsPage() {
   const { t } = useLanguageStore();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role?.toUpperCase() === "ADMIN";
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -215,17 +218,22 @@ export default function IngredientsPage() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!isAdmin) {
+      alert(t("ingredients.deleteAdminOnly"));
+      return;
+    }
     try {
       const res = await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.error || "Failed to delete ingredient");
+        alert(data.message || data.error || "Failed to delete ingredient");
         return;
       }
       setDeleteConfirm(null);
       fetchIngredients();
     } catch (err) {
       console.error("Delete error:", err);
+      alert("មានបញ្ហាក្នុងការលុបគ្រឿងផ្សំ សូមព្យាយាមម្តងទៀត");
     }
   };
 
@@ -374,29 +382,31 @@ export default function IngredientsPage() {
                             <Pencil size={16} />
                           </button>
 
-                          {deleteConfirm === ing.id ? (
-                            <div className="flex items-center gap-1 ml-1">
+                          {isAdmin && (
+                            deleteConfirm === ing.id ? (
+                              <div className="flex items-center gap-1 ml-1">
+                                <button
+                                  onClick={() => handleDelete(ing.id)}
+                                  className="px-2 py-0.5 bg-rose-600 text-white text-xs font-medium rounded hover:bg-rose-700 cursor-pointer"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirm(null)}
+                                  className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
                               <button
-                                onClick={() => handleDelete(ing.id)}
-                                className="px-2 py-0.5 bg-rose-600 text-white text-xs font-medium rounded hover:bg-rose-700 cursor-pointer"
+                                onClick={() => setDeleteConfirm(ing.id)}
+                                title="Delete Ingredient"
+                                className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                               >
-                                Confirm
+                                <Trash2 size={16} />
                               </button>
-                              <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setDeleteConfirm(ing.id)}
-                              title="Delete Ingredient"
-                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            )
                           )}
                         </div>
                       </td>
