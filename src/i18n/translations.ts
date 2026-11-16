@@ -438,6 +438,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "reports.colPaymentMethod": "វិធីទូទាត់",
     "reports.colShare": "ចំណែកភាគរយ",
     "reports.sortedByQty": "រៀបតាមចំនួនលក់ច្រើនជាងគេ (QTY)",
+    "reports.today": "ថ្ងៃនេះ",
+    "reports.sevenDays": "៧ ថ្ងៃ",
+    "reports.thisMonth": "ខែនេះ",
+    "reports.allTime": "ទាំងអស់",
+    "reports.to": "ដល់",
 
     // Settings
     "settings.title": "ការកំណត់ហាង & ពន្ធ",
@@ -889,6 +894,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "reports.colPaymentMethod": "Payment Method",
     "reports.colShare": "Share %",
     "reports.sortedByQty": "Sorted by Quantity Sold (QTY)",
+    "reports.today": "Today",
+    "reports.sevenDays": "7 Days",
+    "reports.thisMonth": "This Month",
+    "reports.allTime": "All Time",
+    "reports.to": "to",
 
     // Settings
     "settings.title": "Store & Tax Settings",

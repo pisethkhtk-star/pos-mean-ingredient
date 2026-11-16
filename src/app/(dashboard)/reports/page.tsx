@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
-  ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend
 } from "recharts";
-import { 
-  BarChart3, DollarSign, TrendingUp, ShoppingBag, 
-  Activity, Download, Printer, 
-  Layers, CreditCard, UserCheck, 
+import {
+  BarChart3, DollarSign, TrendingUp, ShoppingBag,
+  Activity, Download, Printer,
+  Layers, CreditCard, UserCheck,
   Award, Calendar, Loader2, FileSpreadsheet
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -86,12 +86,12 @@ export default function ReportsPage() {
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-      
+
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error("Failed to fetch reports");
       }
-      
+
       const result: ReportData = await res.json();
 
       // Ensure topProducts is strictly populated from COMPLETED orders within the date range
@@ -366,7 +366,7 @@ export default function ReportsPage() {
       prodHeaderRow.height = 26;
       prodHeaderRow.eachCell((cell, colNum) => {
         if (colNum <= 7) {
-          cell.fill = colNum === 3 
+          cell.fill = colNum === 3
             ? { type: "pattern", pattern: "solid", fgColor: { argb: "FF4338CA" } } // Highlight QTY column
             : headerFill;
           cell.alignment = { vertical: "middle", horizontal: colNum === 2 ? "left" : (colNum === 1 || colNum === 3 ? "center" : "right") };
@@ -593,8 +593,8 @@ export default function ReportsPage() {
 
       // Generate Native XLSX Buffer
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { 
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -642,10 +642,10 @@ export default function ReportsPage() {
             {t("reports.subtitle")}
           </p>
         </div>
-        
+
         {/* Export Buttons */}
         <div className="flex items-center gap-2.5">
-          <button 
+          <button
             onClick={exportExcel}
             disabled={!data || loading || exporting}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
@@ -657,11 +657,11 @@ export default function ReportsPage() {
             )}
             {exporting ? "កំពុងទាញយក..." : t("reports.exportExcel")}
           </button>
-          <button 
+          <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
           >
-            <Printer size={16} /> 
+            <Printer size={16} />
             {t("reports.exportPdf")}
           </button>
         </div>
@@ -683,11 +683,10 @@ export default function ReportsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                }`}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${isActive
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                  }`}
               >
                 <Icon size={14} />
                 {tab.label}
@@ -702,50 +701,46 @@ export default function ReportsPage() {
           <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl">
             <button
               onClick={() => setQuickDate("today")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                quickFilter === "today"
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "today"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
             >
-              ថ្ងៃនេះ
+              {t("reports.today")}
             </button>
             <button
               onClick={() => setQuickDate("week")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                quickFilter === "week"
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "week"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
             >
-              ៧ ថ្ងៃ
+              {t("reports.sevenDays")}
             </button>
             <button
               onClick={() => setQuickDate("month")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                quickFilter === "month"
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "month"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
             >
-              ខែនេះ
+              {t("reports.thisMonth")}
             </button>
             <button
               onClick={() => setQuickDate("all")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                quickFilter === "all"
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "all"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
             >
-              ទាំងអស់
+              {t("reports.allTime")}
             </button>
           </div>
 
           {/* Date Pickers */}
           <div className="flex items-center gap-1.5">
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={dateRange.start}
               onChange={(e) => {
                 setQuickFilter("custom");
@@ -753,9 +748,9 @@ export default function ReportsPage() {
               }}
               className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
             />
-            <span className="text-slate-400 text-xs">ដល់</span>
-            <input 
-              type="date" 
+            <span className="text-slate-400 text-xs">{t("reports.to")}</span>
+            <input
+              type="date"
               value={dateRange.end}
               onChange={(e) => {
                 setQuickFilter("custom");
@@ -886,7 +881,7 @@ export default function ReportsPage() {
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} opacity={0.4} />
                           <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                           <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
-                          <RechartsTooltip 
+                          <RechartsTooltip
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                             formatter={(value: any) => formatCurrency(Number(value))}
                           />
