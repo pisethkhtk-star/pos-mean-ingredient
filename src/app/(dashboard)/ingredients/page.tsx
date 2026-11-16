@@ -125,6 +125,10 @@ export default function IngredientsPage() {
   };
 
   const openAdjust = (ing: Ingredient) => {
+    if (!isAdmin) {
+      alert(t("ingredients.adjustAdminOnly"));
+      return;
+    }
     setAdjustTarget(ing);
     setAdjustType("IN");
     setAdjustQty("");
@@ -183,6 +187,10 @@ export default function IngredientsPage() {
 
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      setError(t("ingredients.adjustAdminOnly"));
+      return;
+    }
     if (!adjustTarget || !adjustQty || parseFloat(adjustQty) <= 0) {
       setError("Please enter a valid quantity greater than 0");
       return;
@@ -367,13 +375,15 @@ export default function IngredientsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openAdjust(ing)}
-                            title="Adjust Stock"
-                            className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
-                          >
-                            <ArrowUpDown size={16} />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => openAdjust(ing)}
+                              title="Adjust Stock"
+                              className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
+                            >
+                              <ArrowUpDown size={16} />
+                            </button>
+                          )}
                           <button
                             onClick={() => openEdit(ing)}
                             title="Edit Ingredient"

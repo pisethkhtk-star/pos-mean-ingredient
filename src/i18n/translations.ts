@@ -263,6 +263,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "ingredients.initialStock": "ស្តុកដំបូង",
     "ingredients.minStockAlert": "ស្តុកអប្បបរមាប្រកាសអាសន្ន",
     "ingredients.deleteAdminOnly": "មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិលុបគ្រឿងផ្សំ",
+    "ingredients.adjustAdminOnly": "មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិកែសម្រួលស្តុក",
 
     // Categories
     "categories.title": "ប្រភេទផលិតផល",
@@ -720,6 +721,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "ingredients.initialStock": "Initial Stock",
     "ingredients.minStockAlert": "Min Stock Alert Threshold",
     "ingredients.deleteAdminOnly": "Only Admin has permission to delete ingredients",
+    "ingredients.adjustAdminOnly": "Only Admin has permission to adjust stock",
 
     // Categories
     "categories.title": "Product Categories",

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Warehouse, Search, Plus, RefreshCw, ArrowUp, ArrowDown, SlidersHorizontal, Loader2, X, Boxes, ShoppingBag } from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface InventoryLog {
   id: number;
@@ -31,6 +32,8 @@ const typeBadge: Record<string, string> = {
 
 export default function InventoryPage() {
   const { t } = useLanguageStore();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role?.toUpperCase() === "ADMIN";
   const [logs, setLogs] = useState<InventoryLog[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -76,7 +79,12 @@ export default function InventoryPage() {
   });
 
   const handleAdjust = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true); setError("");
+    e.preventDefault();
+    if (!isAdmin) {
+      setError(t("ingredients.adjustAdminOnly") || "Only Admin can adjust stock");
+      return;
+    }
+    setSaving(true); setError("");
     const payload = targetCategory === "INGREDIENT" 
       ? { ingredientId: form.ingredientId, type: form.type, quantity: parseFloat(form.quantity), note: form.note }
       : { productId: form.productId, type: form.type, quantity: parseFloat(form.quantity), note: form.note };
@@ -114,9 +122,11 @@ export default function InventoryPage() {
           <button onClick={fetchLogs} className="p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
             <RefreshCw size={16} />
           </button>
-          <button onClick={() => { setError(""); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
-            <Plus size={16} /> {t("inventory.adjustStock")}
-          </button>
+          {isAdmin && (
+            <button onClick={() => { setError(""); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
+              <Plus size={16} /> {t("inventory.adjustStock")}
+            </button>
+          )}
         </div>
       </div>
 
