@@ -1,25 +1,44 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ClipboardList, Search, ChevronDown, Eye, X, Loader2, Package, Download } from "lucide-react";
+import { 
+  ClipboardList, Search, ChevronDown, Eye, X, Loader2, Package, Download, 
+  Trash2, AlertTriangle, ShieldAlert, RotateCcw, CheckCircle2, AlertCircle, ArrowRight
+} from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
 
-interface OrderItem { id: number; quantity: number; price: number; subtotal: number; product: { name: string; code: string }; }
+interface OrderItem { 
+  id: number; 
+  quantity: number; 
+  price: number; 
+  subtotal: number; 
+  product: { name: string; code: string; hasRecipe?: boolean }; 
+}
+
 interface Order {
-  id: number; orderNumber: string; status: string;
-  subtotal: number; discount: number; tax: number; total: number;
-  paymentMethod: string; amountPaid: number; change: number;
-  note?: string; createdAt: string;
+  id: number; 
+  orderNumber: string; 
+  status: string;
+  subtotal: number; 
+  discount: number; 
+  tax: number; 
+  total: number;
+  paymentMethod: string; 
+  amountPaid: number; 
+  change: number;
+  note?: string; 
+  createdAt: string;
   customer: { name: string; phone?: string } | null;
   user: { name: string };
   items: OrderItem[];
 }
 
 const statusColors: Record<string, string> = {
-  COMPLETED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
-  PENDING: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-  REFUNDED: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400",
-  CANCELLED: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  COMPLETED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40",
+  PENDING: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40",
+  REFUNDED: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40",
+  CANCELLED: "bg-slate-150 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700",
+  DELETED: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 font-bold",
 };
 
 export default function OrdersPage() {
@@ -32,6 +51,13 @@ export default function OrdersPage() {
   const [endDate, setEndDate] = useState("");
   const [selected, setSelected] = useState<Order | null>(null);
 
+  // 2-Step Delete Modal States
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
@@ -39,14 +65,80 @@ export default function OrdersPage() {
     if (statusFilter !== "ALL") params.set("status", statusFilter);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
-    const res = await fetch(`/api/orders?${params}`);
-    if (res.ok) setOrders(await res.json());
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/orders?${params}`);
+      if (res.ok) setOrders(await res.json());
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [search, statusFilter, startDate, endDate]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { 
+    fetchOrders(); 
+  }, [fetchOrders]);
 
-  const totalRevenue = orders.filter(o => o.status === "COMPLETED").reduce((s, o) => s + Number(o.total), 0);
+  const totalRevenue = orders
+    .filter(o => o.status === "COMPLETED")
+    .reduce((s, o) => s + Number(o.total), 0);
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "COMPLETED": return t("orders.statusCompleted");
+      case "PENDING": return t("orders.statusPending");
+      case "REFUNDED": return t("orders.statusRefunded");
+      case "CANCELLED": return t("orders.statusCancelled");
+      case "DELETED": return t("orders.statusDeleted");
+      default: return status;
+    }
+  };
+
+  const openDeleteModal = (order: Order) => {
+    if (order.status === "DELETED" || order.status === "CANCELLED" || order.status === "REFUNDED") {
+      setToastMessage({ type: "error", text: t("orders.alreadyVoided") });
+      return;
+    }
+    setDeleteTarget(order);
+    setDeleteStep(1);
+    setDeleteInput("");
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // 1. First attempt HTTP DELETE /api/orders/{id}
+      let res = await fetch(`/api/orders/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // 2. If DELETE isn't directly supported on proxy, fallback to PUT status DELETED
+      if (!res.ok) {
+        res = await fetch(`/api/orders/${deleteTarget.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "DELETED" }),
+        });
+      }
+
+      if (res.ok) {
+        setToastMessage({ type: "success", text: t("orders.deleteSuccess") });
+        setDeleteTarget(null);
+        setSelected(null);
+        await fetchOrders();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setToastMessage({ type: "error", text: data.message || "Failed to delete order" });
+      }
+    } catch (err) {
+      console.error("Error executing order delete:", err);
+      setToastMessage({ type: "error", text: "Network error occurred while deleting order." });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const exportToCSV = () => {
     const headers = ["Order #", "Customer", "Cashier", "Payment Method", "Items Count", "Subtotal", "Discount", "Tax", "Total", "Status", "Date", "Note"];
@@ -82,6 +174,30 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Alert Banner */}
+      {toastMessage && (
+        <div className={`p-4 rounded-xl border flex items-center justify-between shadow-sm transition-all text-sm ${
+          toastMessage.type === "success"
+            ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+            : "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
+        }`}>
+          <div className="flex items-center gap-2.5">
+            {toastMessage.type === "success" ? (
+              <CheckCircle2 size={18} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <AlertCircle size={18} className="shrink-0 text-rose-600 dark:text-rose-400" />
+            )}
+            <span className="font-medium">{toastMessage.text}</span>
+          </div>
+          <button 
+            onClick={() => setToastMessage(null)}
+            className="p-1 hover:bg-black/5 rounded-lg text-slate-500 cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -109,6 +225,7 @@ export default function OrdersPage() {
             className="appearance-none pl-3 pr-8 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-sm focus:outline-none cursor-pointer">
             <option value="ALL">{t("orders.allStatuses")}</option>
             <option value="COMPLETED">{t("orders.statusCompleted")}</option>
+            <option value="DELETED">{t("orders.statusDeleted")}</option>
             <option value="PENDING">{t("orders.statusPending")}</option>
             <option value="REFUNDED">{t("orders.statusRefunded")}</option>
             <option value="CANCELLED">{t("orders.statusCancelled")}</option>
@@ -134,31 +251,61 @@ export default function OrdersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {[t("orders.colOrderNum"), t("orders.colCustomer"), t("orders.colCashier"), t("orders.colPayment"), t("orders.colItems"), t("orders.colTotal"), t("orders.colStatus"), t("orders.colDate"), ""].map(h => (
+                  {[t("orders.colOrderNum"), t("orders.colCustomer"), t("orders.colCashier"), t("orders.colPayment"), t("orders.colItems"), t("orders.colTotal"), t("orders.colStatus"), t("orders.colDate"), t("common.actions")].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {orders.map(o => (
-                  <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 font-mono font-semibold text-indigo-600 dark:text-indigo-400 text-xs">{o.orderNumber}</td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{o.customer?.name || <span className="text-slate-400">{t("pos.walkInCustomer")}</span>}</td>
-                    <td className="px-4 py-3 text-slate-500">{o.user.name}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-xs font-medium">{o.paymentMethod.replace("_", " ")}</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{o.items.length}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">${Number(o.total).toFixed(2)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusColors[o.status] || ""}`}>{o.status}</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(o.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => setSelected(o)} className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><Eye size={14} /></button>
-                    </td>
-                  </tr>
-                ))}
+                {orders.map(o => {
+                  const isVoided = o.status === "DELETED" || o.status === "CANCELLED" || o.status === "REFUNDED";
+                  return (
+                    <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-4 py-3 font-mono font-semibold text-indigo-600 dark:text-indigo-400 text-xs">{o.orderNumber}</td>
+                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{o.customer?.name || <span className="text-slate-400">{t("pos.walkInCustomer")}</span>}</td>
+                      <td className="px-4 py-3 text-slate-500">{o.user.name}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-xs font-medium">{o.paymentMethod.replace("_", " ")}</span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">{o.items.length}</td>
+                      <td className={`px-4 py-3 font-bold ${isVoided ? "line-through text-slate-400" : "text-slate-900 dark:text-slate-100"}`}>
+                        ${Number(o.total).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[o.status] || "bg-slate-100 text-slate-600"}`}>
+                          {getStatusLabel(o.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(o.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={() => setSelected(o)} 
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                            title={t("orders.orderDetails")}
+                          >
+                            <Eye size={15} />
+                          </button>
+                          
+                          {/* Special Delete Action */}
+                          {!isVoided ? (
+                            <button
+                              onClick={() => openDeleteModal(o)}
+                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 cursor-pointer transition-colors"
+                              title={t("orders.deleteOrder")}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          ) : (
+                            <span className="p-1.5 text-slate-300 dark:text-slate-700 cursor-not-allowed" title={t("orders.alreadyVoided")}>
+                              <Trash2 size={15} className="opacity-40" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -170,9 +317,14 @@ export default function OrdersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <h2 className="font-bold text-slate-900 dark:text-slate-100 font-mono">{selected.orderNumber}</h2>
-                <p className="text-xs text-slate-400">{new Date(selected.createdAt).toLocaleString()}</p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <h2 className="font-bold text-slate-900 dark:text-slate-100 font-mono text-base">{selected.orderNumber}</h2>
+                  <p className="text-xs text-slate-400">{new Date(selected.createdAt).toLocaleString()}</p>
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColors[selected.status] || ""}`}>
+                  {getStatusLabel(selected.status)}
+                </span>
               </div>
               <button onClick={() => setSelected(null)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X size={18} /></button>
             </div>
@@ -183,7 +335,7 @@ export default function OrdersPage() {
                   { l: t("orders.colCustomer"), v: selected.customer?.name || t("pos.walkInCustomer") },
                   { l: t("orders.colCashier"), v: selected.user.name },
                   { l: t("orders.colPayment"), v: selected.paymentMethod.replace("_", " ") },
-                  { l: t("orders.colStatus"), v: selected.status }
+                  { l: t("orders.colStatus"), v: getStatusLabel(selected.status) }
                 ].map(row => (
                   <div key={row.l}><p className="text-xs text-slate-400">{row.l}</p><p className="font-semibold text-slate-800 dark:text-slate-200">{row.v}</p></div>
                 ))}
@@ -199,7 +351,7 @@ export default function OrdersPage() {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {selected.items.map(item => (
                       <tr key={item.id}>
-                        <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{item.product.name}</td>
+                        <td className="px-3 py-2 text-slate-700 dark:text-slate-300 font-medium">{item.product.name}</td>
                         <td className="px-3 py-2 text-slate-500">{item.quantity}</td>
                         <td className="px-3 py-2 text-slate-500">${Number(item.price).toFixed(2)}</td>
                         <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-200">${Number(item.subtotal).toFixed(2)}</td>
@@ -224,6 +376,153 @@ export default function OrdersPage() {
                 <div className="flex justify-between text-slate-500"><span>{t("payment.change")}</span><span>${Number(selected.change).toFixed(2)}</span></div>
               </div>
               {selected.note && <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl text-xs text-slate-500"><span className="font-semibold">{t("inventory.colNote")}: </span>{selected.note}</div>}
+
+              {/* Delete / Void Button in Modal */}
+              {selected.status !== "DELETED" && selected.status !== "CANCELLED" && selected.status !== "REFUNDED" && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                  <button
+                    onClick={() => openDeleteModal(selected)}
+                    className="flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 dark:text-rose-400 border border-rose-200 dark:border-rose-900 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                    {t("orders.deleteOrder")}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2-Step Delete & Stock Return Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-rose-50/70 dark:bg-rose-950/30 border-b border-rose-100 dark:border-rose-900/50 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 rounded-xl">
+                  {deleteStep === 1 ? <AlertTriangle size={20} /> : <ShieldAlert size={20} />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    {deleteStep === 1 ? t("orders.deleteStep1Title") : t("orders.deleteStep2Title")}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    {deleteTarget.orderNumber} · ${Number(deleteTarget.total).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDeleteTarget(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {deleteStep === 1 ? (
+                /* STEP 1: Review & Stock Return Notification */
+                <>
+                  <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-3 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                    <span>{t("orders.deleteStep1Warning")}</span>
+                  </div>
+
+                  {/* Restock items preview */}
+                  <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-3 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <RotateCcw size={13} className="text-indigo-600 dark:text-indigo-400" />
+                      {t("orders.deleteReturnItems")}
+                    </p>
+                    <div className="divide-y divide-slate-150 dark:divide-slate-850 max-h-36 overflow-y-auto pr-1">
+                      {deleteTarget.items.map((item) => (
+                        <div key={item.id} className="py-1.5 flex justify-between items-center text-xs">
+                          <span className="font-medium text-slate-800 dark:text-slate-200">{item.product.name}</span>
+                          <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 rounded-full font-bold text-[11px]">
+                            +{item.quantity} units restocked
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Step 1 Actions */}
+                  <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(null)}
+                      className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteStep(2)}
+                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      {t("orders.continueStep2")}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* STEP 2: Final Confirmation with text typing verification */
+                <>
+                  <div className="p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl flex items-start gap-3 text-xs text-rose-800 dark:text-rose-300">
+                    <ShieldAlert size={16} className="shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                    <span>{t("orders.deleteStep2Warning")}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                      {t("orders.deleteTypeInstruction")}:
+                    </label>
+                    <div className="p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center font-mono text-sm font-bold text-rose-600">
+                      DELETE
+                    </div>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={deleteInput}
+                      onChange={(e) => setDeleteInput(e.target.value)}
+                      placeholder={t("orders.deletePlaceholder")}
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-center uppercase tracking-widest"
+                    />
+                  </div>
+
+                  {/* Step 2 Actions */}
+                  <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteStep(1)}
+                      disabled={deleting}
+                      className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                    >
+                      {t("common.back")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmDelete}
+                      disabled={deleteInput.trim().toUpperCase() !== "DELETE" && deleteInput.trim() !== deleteTarget.orderNumber || deleting}
+                      className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {deleting ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          {t("orders.deleteProcessing")}
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 size={14} />
+                          {t("orders.deleteConfirmBtn")}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
