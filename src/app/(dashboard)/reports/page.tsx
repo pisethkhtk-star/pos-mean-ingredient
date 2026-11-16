@@ -9,7 +9,7 @@ import {
   BarChart3, DollarSign, TrendingUp, ShoppingBag, 
   Activity, Download, Printer, 
   Layers, CreditCard, UserCheck, 
-  Award, Calendar, Loader2, ArrowUpRight
+  Award, Calendar, Loader2, FileSpreadsheet
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useLanguageStore } from "@/store/languageStore";
@@ -69,6 +69,7 @@ export default function ReportsPage() {
   const { user } = useAuthStore();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PRODUCTS" | "PAYMENTS" | "CASHIERS">("OVERVIEW");
   const [quickFilter, setQuickFilter] = useState<"today" | "week" | "month" | "all" | "custom">("all");
@@ -220,38 +221,396 @@ export default function ReportsPage() {
     return new Intl.NumberFormat("en-US").format(Math.round(val)) + " ៛";
   };
 
-  const exportCSV = () => {
+  // Professional Native .XLSX Exporter using ExcelJS
+  const exportExcel = async () => {
     if (!data) return;
-    const rows = [
-      ["Report Type", "POS Sales & Financial Report"],
-      ["Date Range", `${dateRange.start || "All"} to ${dateRange.end || "All"}`],
-      ["Generated At", new Date().toLocaleString()],
-      [],
-      ["Summary Metric", "Value (USD)", "Value (KHR)"],
-      ["Total Revenue", data.summary.totalRevenue, data.summary.totalRevenueKhr || data.summary.totalRevenue * 4100],
-      ["Cost of Goods Sold (COGS)", data.summary.totalCostOfGoods, data.summary.totalCostOfGoodsKhr || data.summary.totalCostOfGoods * 4100],
-      ["Net Profit", data.summary.netProfit, data.summary.netProfitKhr || data.summary.netProfit * 4100],
-      ["Total Orders", data.summary.orderCount, ""],
-      ["Average Order Value", data.summary.avgOrderValue, ""],
-      [],
-      ["Date", "Revenue ($)", "Cost ($)", "Profit ($)", "Orders"],
-      ...data.salesByDate.map(d => [d.date, d.revenue, d.cost, d.profit, d.orders]),
-      [],
-      ["Top Products (Sorted by QTY)", "Quantity (Sold)", "Revenue ($)", "Cost ($)", "Profit ($)", "Margin (%)"],
-      ...(data.topProducts || []).map(p => [p.productName, p.quantity, p.revenue, p.cost, p.profit, `${p.marginPct}%`]),
-      [],
-      ["Payment Method", "Amount ($)", "Invoices Count", "Share (%)"],
-      ...(data.paymentMethods || []).map(pm => [pm.method, pm.amount, pm.count, `${pm.sharePct}%`])
-    ];
+    try {
+      setExporting(true);
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Coffee POS System";
+      workbook.lastModifiedBy = "Admin";
+      workbook.created = new Date();
+      workbook.modified = new Date();
 
-    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `pos_sales_report_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const ws = workbook.addWorksheet("Sales_Report", {
+        views: [{ showGridLines: true }],
+        pageSetup: { orientation: "portrait", paperSize: 9 }
+      });
+
+      // Style Helpers
+      const thinBorder: any = {
+        top: { style: "thin", color: { argb: "FFCBD5E1" } },
+        left: { style: "thin", color: { argb: "FFCBD5E1" } },
+        bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+        right: { style: "thin", color: { argb: "FFCBD5E1" } },
+      };
+
+      const headerFill: any = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1E293B" } // Slate-800
+      };
+
+      const primaryFill: any = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4F46E5" } // Indigo-600
+      };
+
+      // 1. Top Title Banner (Rows 1-2)
+      ws.mergeCells("A1:G2");
+      const titleCell = ws.getCell("A1");
+      titleCell.value = "POS SALES & FINANCIAL REPORT (របាយការណ៍លក់ & ហិរញ្ញវត្ថុ)";
+      titleCell.font = { name: "Arial", size: 15, bold: true, color: { argb: "FFFFFFFF" } };
+      titleCell.fill = primaryFill;
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      // Subtitle (Row 3)
+      ws.mergeCells("A3:G3");
+      const subCell = ws.getCell("A3");
+      const dateText = `កាលបរិច្ឆេទ: ${dateRange.start || "All"} ដល់ ${dateRange.end || "All"}  |  កាលបរិច្ឆេទបង្កើត: ${new Date().toLocaleString()}  |  ប្រព័ន្ធ: Coffee POS System`;
+      subCell.value = dateText;
+      subCell.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF3730A3" } };
+      subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2FF" } };
+      subCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      let curRow = 5;
+
+      // 2. Section 1: Financial Summary
+      ws.mergeCells(`A${curRow}:G${curRow}`);
+      const sec1Cell = ws.getCell(`A${curRow}`);
+      sec1Cell.value = "១. ទិដ្ឋភាពសង្ខេបហិរញ្ញវត្ថុ (EXECUTIVE FINANCIAL SUMMARY)";
+      sec1Cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF1E293B" } };
+      curRow++;
+
+      // Summary Table Header
+      const sumHeaderRow = ws.getRow(curRow);
+      sumHeaderRow.values = ["សូចនាករ (Metric)", "តម្លៃ (USD)", "តម្លៃ (KHR)", "សម្គាល់ (Notes)"];
+      sumHeaderRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      sumHeaderRow.eachCell((cell, colNum) => {
+        if (colNum <= 4) {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF312E81" } };
+          cell.alignment = { vertical: "middle", horizontal: colNum === 1 ? "left" : "right" };
+          cell.border = thinBorder;
+        }
+      });
+      sumHeaderRow.height = 24;
+      curRow++;
+
+      const exRate = data.summary.exchangeRate || 4100;
+      const summaryItems = [
+        { label: "ចំណូលសរុប (Total Revenue)", usd: data.summary.totalRevenue, khr: data.summary.totalRevenueKhr || data.summary.totalRevenue * exRate, note: `${data.summary.orderCount} វិក្កយបត្រ COMPLETED` },
+        { label: "ថ្លៃដើមទំនិញ (Cost of Goods / COGS)", usd: data.summary.totalCostOfGoods, khr: data.summary.totalCostOfGoodsKhr || data.summary.totalCostOfGoods * exRate, note: "ថ្លៃដើមគ្រឿងផ្សំ & រូបមន្ត" },
+        { label: "ប្រាក់ចំណេញសុទ្ធ (Net Profit)", usd: data.summary.netProfit, khr: data.summary.netProfitKhr || data.summary.netProfit * exRate, note: `អត្រាចំណេញ ${data.summary.profitMarginPct || 0}%`, isProfit: true },
+        { label: "តម្លៃលក់ជាមធ្យម (Average Order Value)", usd: data.summary.avgOrderValue, khr: data.summary.avgOrderValue * exRate, note: "Average Ticket Size" },
+      ];
+
+      for (const item of summaryItems) {
+        const r = ws.getRow(curRow);
+        r.values = [item.label, item.usd, item.khr, item.note];
+        r.height = 20;
+
+        const cellA = r.getCell(1);
+        cellA.font = { name: "Arial", size: 10, bold: item.isProfit };
+        cellA.border = thinBorder;
+        cellA.alignment = { vertical: "middle" };
+
+        const cellB = r.getCell(2);
+        cellB.numFmt = '"$"#,##0.00';
+        cellB.font = { name: "Arial", size: 10, bold: true, color: item.isProfit ? { argb: "FF047857" } : undefined };
+        cellB.border = thinBorder;
+        cellB.alignment = { vertical: "middle", horizontal: "right" };
+
+        const cellC = r.getCell(3);
+        cellC.numFmt = '#,##0" ៛"';
+        cellC.font = { name: "Arial", size: 10, color: { argb: "FF4338CA" } };
+        cellC.border = thinBorder;
+        cellC.alignment = { vertical: "middle", horizontal: "right" };
+
+        const cellD = r.getCell(4);
+        cellD.font = { name: "Arial", size: 9, color: { argb: "FF64748B" } };
+        cellD.border = thinBorder;
+        cellD.alignment = { vertical: "middle" };
+
+        if (item.isProfit) {
+          r.eachCell((cell, colNum) => {
+            if (colNum <= 4) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFECFDF5" } };
+          });
+        }
+
+        curRow++;
+      }
+
+      curRow += 2;
+
+      // 3. Section 2: Top Products Sorted by QTY
+      ws.mergeCells(`A${curRow}:G${curRow}`);
+      const sec2Cell = ws.getCell(`A${curRow}`);
+      sec2Cell.value = "២. មុខទំនិញលក់ដាច់បំផុត (TOP SELLING PRODUCTS - SORTED BY QTY SOLD)";
+      sec2Cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF1E293B" } };
+      curRow++;
+
+      // Top Products Table Header
+      const prodHeaderRow = ws.getRow(curRow);
+      prodHeaderRow.values = [
+        "ល.រ (#)",
+        "មុខទំនិញ (Product Name)",
+        "ចំនួនលក់ (QTY Sold)",
+        "ចំណូលសរុប (Revenue)",
+        "ថ្លៃដើម (COGS)",
+        "ប្រាក់ចំណេញ (Profit)",
+        "អត្រាចំណេញ (%)"
+      ];
+      prodHeaderRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      prodHeaderRow.height = 26;
+      prodHeaderRow.eachCell((cell, colNum) => {
+        if (colNum <= 7) {
+          cell.fill = colNum === 3 
+            ? { type: "pattern", pattern: "solid", fgColor: { argb: "FF4338CA" } } // Highlight QTY column
+            : headerFill;
+          cell.alignment = { vertical: "middle", horizontal: colNum === 2 ? "left" : (colNum === 1 || colNum === 3 ? "center" : "right") };
+          cell.border = thinBorder;
+        }
+      });
+      curRow++;
+
+      let totalQty = 0;
+      let totalProdRev = 0;
+      let totalProdCost = 0;
+      let totalProdProfit = 0;
+
+      const topList = [...(data.topProducts || [])].sort((a, b) => b.quantity - a.quantity);
+
+      if (topList.length > 0) {
+        topList.forEach((p, idx) => {
+          totalQty += p.quantity;
+          totalProdRev += p.revenue;
+          totalProdCost += p.cost;
+          totalProdProfit += p.profit;
+
+          const r = ws.getRow(curRow);
+          r.values = [
+            idx === 0 ? "🥇 1" : idx === 1 ? "🥈 2" : idx === 2 ? "🥉 3" : idx + 1,
+            p.productName,
+            p.quantity,
+            p.revenue,
+            p.cost,
+            p.profit,
+            p.marginPct / 100
+          ];
+          r.height = 20;
+
+          const zebraBg: any = idx % 2 === 0
+            ? { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } }
+            : { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+
+          r.eachCell((cell, colNum) => {
+            if (colNum <= 7) {
+              cell.fill = zebraBg;
+              cell.border = thinBorder;
+              cell.font = { name: "Arial", size: 10 };
+            }
+          });
+
+          // Cell formatting
+          r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+          r.getCell(2).alignment = { vertical: "middle", horizontal: "left" };
+          r.getCell(2).font = { name: "Arial", size: 10, bold: true, color: { argb: "FF0F172A" } };
+
+          // QTY Highlight
+          const qtyCell = r.getCell(3);
+          qtyCell.numFmt = '#,##0';
+          qtyCell.alignment = { vertical: "middle", horizontal: "center" };
+          qtyCell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF4338CA" } };
+          qtyCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2FF" } };
+
+          r.getCell(4).numFmt = '"$"#,##0.00';
+          r.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(4).font = { name: "Arial", size: 10, bold: true };
+
+          r.getCell(5).numFmt = '"$"#,##0.00';
+          r.getCell(5).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(5).font = { name: "Arial", size: 10, color: { argb: "FF64748B" } };
+
+          r.getCell(6).numFmt = '"$"#,##0.00';
+          r.getCell(6).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(6).font = { name: "Arial", size: 10, bold: true, color: { argb: "FF059669" } };
+
+          r.getCell(7).numFmt = '0.0%';
+          r.getCell(7).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(7).font = { name: "Arial", size: 9, bold: true, color: { argb: "FF047857" } };
+
+          curRow++;
+        });
+
+        // Total Row
+        const totRow = ws.getRow(curRow);
+        const overallMargin = totalProdRev > 0 ? (totalProdProfit / totalProdRev) : 0;
+        totRow.values = ["", "សរុប (TOTAL)", totalQty, totalProdRev, totalProdCost, totalProdProfit, overallMargin];
+        totRow.height = 24;
+        totRow.eachCell((cell, colNum) => {
+          if (colNum <= 7) {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+            cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF0F172A" } };
+            cell.border = {
+              top: { style: "thin", color: { argb: "FF94A3B8" } },
+              bottom: { style: "double", color: { argb: "FF475569" } },
+              left: { style: "thin", color: { argb: "FFCBD5E1" } },
+              right: { style: "thin", color: { argb: "FFCBD5E1" } }
+            };
+          }
+        });
+        totRow.getCell(2).alignment = { vertical: "middle", horizontal: "left" };
+        totRow.getCell(3).numFmt = '#,##0';
+        totRow.getCell(3).alignment = { vertical: "middle", horizontal: "center" };
+        totRow.getCell(4).numFmt = '"$"#,##0.00';
+        totRow.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+        totRow.getCell(5).numFmt = '"$"#,##0.00';
+        totRow.getCell(5).alignment = { vertical: "middle", horizontal: "right" };
+        totRow.getCell(6).numFmt = '"$"#,##0.00';
+        totRow.getCell(6).alignment = { vertical: "middle", horizontal: "right" };
+        totRow.getCell(7).numFmt = '0.0%';
+        totRow.getCell(7).alignment = { vertical: "middle", horizontal: "right" };
+
+        curRow++;
+      } else {
+        const emptyRow = ws.getRow(curRow);
+        emptyRow.values = ["", "មិនមានទិន្នន័យ (No Data)", "", "", "", "", ""];
+        curRow++;
+      }
+
+      curRow += 2;
+
+      // 4. Section 3: Payment Methods Breakdown
+      ws.mergeCells(`A${curRow}:E${curRow}`);
+      const sec3Cell = ws.getCell(`A${curRow}`);
+      sec3Cell.value = "៣. វិធីសាស្ត្រទូទាត់ (PAYMENT METHODS BREAKDOWN)";
+      sec3Cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF1E293B" } };
+      curRow++;
+
+      const payHeaderRow = ws.getRow(curRow);
+      payHeaderRow.values = ["វិធីទូទាត់ (Method)", "ទឹកប្រាក់ (USD)", "ទឹកប្រាក់ (KHR)", "ចំនួនវិក្កយបត្រ (Invoices)", "ចំណែកភាគរយ (%)"];
+      payHeaderRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      payHeaderRow.height = 24;
+      payHeaderRow.eachCell((cell, colNum) => {
+        if (colNum <= 5) {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F766E" } }; // Teal
+          cell.alignment = { vertical: "middle", horizontal: colNum === 1 ? "left" : "right" };
+          cell.border = thinBorder;
+        }
+      });
+      curRow++;
+
+      if (data.paymentMethods && data.paymentMethods.length > 0) {
+        for (const pm of data.paymentMethods) {
+          const r = ws.getRow(curRow);
+          r.values = [
+            pm.method.replace("_", " "),
+            pm.amount,
+            pm.amount * exRate,
+            pm.count,
+            pm.sharePct / 100
+          ];
+          r.height = 20;
+          r.eachCell((cell, colNum) => {
+            if (colNum <= 5) {
+              cell.border = thinBorder;
+              cell.font = { name: "Arial", size: 10 };
+            }
+          });
+          r.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
+          r.getCell(1).font = { name: "Arial", size: 10, bold: true };
+          r.getCell(2).numFmt = '"$"#,##0.00';
+          r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(3).numFmt = '#,##0" ៛"';
+          r.getCell(3).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(4).numFmt = '#,##0';
+          r.getCell(4).alignment = { vertical: "middle", horizontal: "center" };
+          r.getCell(5).numFmt = '0.0%';
+          r.getCell(5).alignment = { vertical: "middle", horizontal: "right" };
+          curRow++;
+        }
+      }
+
+      curRow += 2;
+
+      // 5. Section 4: Daily Sales Breakdown
+      if (data.salesByDate && data.salesByDate.length > 0) {
+        ws.mergeCells(`A${curRow}:E${curRow}`);
+        const sec4Cell = ws.getCell(`A${curRow}`);
+        sec4Cell.value = "៤. និន្នាការលក់តាមកាលបរិច្ឆេទ (DAILY SALES BREAKDOWN)";
+        sec4Cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF1E293B" } };
+        curRow++;
+
+        const dateHeaderRow = ws.getRow(curRow);
+        dateHeaderRow.values = ["កាលបរិច្ឆេទ (Date)", "ចំណូល (Revenue)", "ថ្លៃដើម (Cost)", "ប្រាក់ចំណេញ (Profit)", "ចំនួនវិក្កយបត្រ (Orders)"];
+        dateHeaderRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+        dateHeaderRow.height = 24;
+        dateHeaderRow.eachCell((cell, colNum) => {
+          if (colNum <= 5) {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF334155" } };
+            cell.alignment = { vertical: "middle", horizontal: colNum === 1 ? "center" : "right" };
+            cell.border = thinBorder;
+          }
+        });
+        curRow++;
+
+        for (const d of data.salesByDate) {
+          const r = ws.getRow(curRow);
+          r.values = [d.date, d.revenue, d.cost, d.profit, d.orders];
+          r.height = 20;
+          r.eachCell((cell, colNum) => {
+            if (colNum <= 5) {
+              cell.border = thinBorder;
+              cell.font = { name: "Arial", size: 10 };
+            }
+          });
+          r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+          r.getCell(2).numFmt = '"$"#,##0.00';
+          r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(3).numFmt = '"$"#,##0.00';
+          r.getCell(3).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(4).numFmt = '"$"#,##0.00';
+          r.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(4).font = { name: "Arial", size: 10, bold: true, color: { argb: "FF059669" } };
+          r.getCell(5).numFmt = '#,##0';
+          r.getCell(5).alignment = { vertical: "middle", horizontal: "center" };
+          curRow++;
+        }
+      }
+
+      // 6. Set Proportional Column Widths so NOTHING is truncated or shows ###!
+      ws.columns = [
+        { width: 14 }, // Col A: # / Rank / Method
+        { width: 34 }, // Col B: Product Name / Metric
+        { width: 24 }, // Col C: QTY / USD
+        { width: 24 }, // Col D: Revenue / KHR
+        { width: 20 }, // Col E: Cost / Share %
+        { width: 20 }, // Col F: Profit
+        { width: 18 }, // Col G: Margin %
+      ];
+
+      // Generate Native XLSX Buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      const fileName = `pos_sales_report_${dateRange.start || "all"}_${dateRange.end || "all"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error("Failed to generate Excel report:", err);
+      alert("មានបញ្ហាក្នុងការទាញយក Excel សូមព្យាយាមម្តងទៀត");
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER")) {
@@ -287,16 +646,20 @@ export default function ReportsPage() {
         {/* Export Buttons */}
         <div className="flex items-center gap-2.5">
           <button 
-            onClick={exportCSV}
-            disabled={!data || loading}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+            onClick={exportExcel}
+            disabled={!data || loading || exporting}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <Download size={16} /> 
-            {t("reports.exportExcel")}
+            {exporting ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <FileSpreadsheet size={16} />
+            )}
+            {exporting ? "កំពុងទាញយក..." : t("reports.exportExcel")}
           </button>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
           >
             <Printer size={16} /> 
             {t("reports.exportPdf")}
