@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { 
   ClipboardList, Search, ChevronDown, Eye, X, Loader2, Package, Download, 
-  Trash2, AlertTriangle, ShieldAlert, RotateCcw, CheckCircle2, AlertCircle, ArrowRight
+  Trash2, AlertTriangle, ShieldAlert, RotateCcw, CheckCircle2, AlertCircle, ArrowRight,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
 
@@ -51,6 +52,12 @@ export default function OrdersPage() {
   const [endDate, setEndDate] = useState("");
   const [selected, setSelected] = useState<Order | null>(null);
 
+  // Pagination states (20 records per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const [overallRevenue, setOverallRevenue] = useState(0);
+
   // 2-Step Delete Modal States
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
@@ -58,30 +65,54 @@ export default function OrdersPage() {
   const [deleting, setDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (pageToFetch = currentPage) => {
     setLoading(true);
     const params = new URLSearchParams();
+    params.set("page", pageToFetch.toString());
+    params.set("size", "20");
     if (search) params.set("search", search);
     if (statusFilter !== "ALL") params.set("status", statusFilter);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     try {
       const res = await fetch(`/api/orders?${params}`);
-      if (res.ok) setOrders(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === "object" && "content" in data) {
+          setOrders(data.content || []);
+          setCurrentPage(data.page || pageToFetch);
+          setTotalPages(data.totalPages || 1);
+          setTotalElements(data.totalElements || 0);
+          setOverallRevenue(data.totalRevenue ?? 0);
+        } else if (Array.isArray(data)) {
+          setOrders(data.slice(0, 20));
+          setCurrentPage(pageToFetch);
+          setTotalPages(Math.max(1, Math.ceil(data.length / 20)));
+          setTotalElements(data.length);
+          const rev = data
+            .filter((o: any) => o.status === "COMPLETED")
+            .reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+          setOverallRevenue(rev);
+        }
+      }
     } catch (err) {
       console.error("Failed to load orders:", err);
     } finally {
       setLoading(false);
     }
+  }, [currentPage, search, statusFilter, startDate, endDate]);
+
+  // When search or filters change, reset to page 1
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchOrders(1);
   }, [search, statusFilter, startDate, endDate]);
 
-  useEffect(() => { 
-    fetchOrders(); 
-  }, [fetchOrders]);
-
-  const totalRevenue = orders
-    .filter(o => o.status === "COMPLETED")
-    .reduce((s, o) => s + Number(o.total), 0);
+  const goToPage = (p: number) => {
+    if (p < 1 || p > totalPages || p === currentPage) return;
+    setCurrentPage(p);
+    fetchOrders(p);
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -140,36 +171,53 @@ export default function OrdersPage() {
     }
   };
 
-  const exportToCSV = () => {
-    const headers = ["Order #", "Customer", "Cashier", "Payment Method", "Items Count", "Subtotal", "Discount", "Tax", "Total", "Status", "Date", "Note"];
-    const csvRows = [headers.join(",")];
-    
-    orders.forEach(o => {
-      const row = [
-        o.orderNumber,
-        `"${o.customer?.name || 'Walk-in'}"`,
-        `"${o.user.name}"`,
-        o.paymentMethod.replace("_", " "),
-        o.items.length,
-        o.subtotal,
-        o.discount,
-        o.tax,
-        o.total,
-        o.status,
-        new Date(o.createdAt).toLocaleDateString(),
-        `"${(o.note || "").replace(/"/g, '""')}"`
-      ];
-      csvRows.push(row.join(","));
-    });
-    
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `orders_export_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportToCSV = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
+      // Fetch full set without page limit for complete export
+      const res = await fetch(`/api/orders?${params}`);
+      let exportData: Order[] = orders;
+      if (res.ok) {
+        const raw = await res.json();
+        exportData = Array.isArray(raw) ? raw : (raw.content || orders);
+      }
+
+      const headers = ["Order #", "Customer", "Cashier", "Payment Method", "Items Count", "Subtotal", "Discount", "Tax", "Total", "Status", "Date", "Note"];
+      const csvRows = [headers.join(",")];
+      
+      exportData.forEach(o => {
+        const row = [
+          o.orderNumber,
+          `"${o.customer?.name || 'Walk-in'}"`,
+          `"${o.user.name}"`,
+          o.paymentMethod.replace("_", " "),
+          o.items.length,
+          o.subtotal,
+          o.discount,
+          o.tax,
+          o.total,
+          o.status,
+          new Date(o.createdAt).toLocaleDateString(),
+          `"${(o.note || "").replace(/"/g, '""')}"`
+        ];
+        csvRows.push(row.join(","));
+      });
+      
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `orders_export_${new Date().getTime()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Export error:", err);
+    }
   };
 
   return (
@@ -205,7 +253,7 @@ export default function OrdersPage() {
             <ClipboardList size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("orders.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5">{orders.length} {t("orders.orderCount")} · {t("orders.revenue")}: ${totalRevenue.toFixed(2)}</p>
+          <p className="text-sm text-slate-500 mt-1.5">{totalElements} {t("orders.orderCount")} · {t("orders.revenue")}: ${overallRevenue.toFixed(2)}</p>
         </div>
         <button onClick={exportToCSV} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer">
           <Download size={16} />
@@ -308,6 +356,69 @@ export default function OrdersPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalElements > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {t("orders.showing")} <span className="font-semibold text-slate-700 dark:text-slate-200">{(currentPage - 1) * 20 + 1}</span> {t("orders.to")}{" "}
+              <span className="font-semibold text-slate-700 dark:text-slate-200">{Math.min(currentPage * 20, totalElements)}</span> {t("orders.of")}{" "}
+              <span className="font-semibold text-slate-700 dark:text-slate-200">{totalElements}</span> {t("orders.records")}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {/* Previous Button */}
+              <button
+                type="button"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1 || loading}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs cursor-pointer"
+              >
+                <ChevronLeft size={14} />
+                <span>{t("orders.previous")}</span>
+              </button>
+
+              {/* Page Number Buttons */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .map((p, idx, arr) => {
+                    const showEllipsisBefore = idx > 0 && p - arr[idx - 1] > 1;
+                    return (
+                      <span key={p} className="flex items-center gap-1">
+                        {showEllipsisBefore && (
+                          <span className="px-1.5 text-xs text-slate-400">...</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => goToPage(p)}
+                          disabled={loading}
+                          className={`min-w-8 h-8 flex items-center justify-center text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                            p === currentPage
+                              ? "bg-indigo-600 text-white shadow-xs"
+                              : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </span>
+                    );
+                  })}
+              </div>
+
+              {/* Next Button */}
+              <button
+                type="button"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage >= totalPages || loading}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs cursor-pointer"
+              >
+                <span>{t("orders.next")}</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>

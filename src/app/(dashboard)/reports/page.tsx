@@ -122,7 +122,8 @@ export default function ReportsPage() {
 
           const ordersRes = await fetch(`/api/orders?${ordersParams.toString()}`);
           if (ordersRes.ok) {
-            const orders = await ordersRes.json();
+            const rawOrders = await ordersRes.json();
+            const orders = Array.isArray(rawOrders) ? rawOrders : (rawOrders.content || []);
             const prodMap: Record<string, { quantity: number; revenue: number; cost: number }> = {};
             const payMap: Record<string, { amount: number; count: number }> = {};
             let totalOrderRev = 0;

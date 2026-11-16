@@ -425,6 +425,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "orders.deleteSuccess": "វិក្កយបត្រត្រូវបានលុបជោគជ័យ និងបានបង្វិលស្តុកទំនិញ/គ្រឿងផ្សំចូលវិញរួចរាល់!",
     "orders.continueStep2": "បន្តទៅជំហានទី ២ ➜",
     "orders.alreadyVoided": "វិក្កយបត្រនេះត្រូវបានបោះបង់ ឬលុបរួចហើយ",
+    "orders.page": "ទំព័រ",
+    "orders.of": "នៃ",
+    "orders.showing": "បង្ហាញ",
+    "orders.to": "ដល់",
+    "orders.records": "វិក្កយបត្រ",
+    "orders.previous": "ថយក្រោយ",
+    "orders.next": "បន្ទាប់",
 
     // Reports
     "reports.title": "របាយការណ៍លក់ & វិភាគទិន្នន័យ",
@@ -903,6 +910,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "orders.deleteSuccess": "Order deleted successfully and stock returned to inventory!",
     "orders.continueStep2": "Continue to Step 2 ➜",
     "orders.alreadyVoided": "This order is already cancelled or deleted",
+    "orders.page": "Page",
+    "orders.of": "of",
+    "orders.showing": "Showing",
+    "orders.to": "to",
+    "orders.records": "orders",
+    "orders.previous": "Previous",
+    "orders.next": "Next",
 
     // Reports
     "reports.title": "Reports & Analytics",
