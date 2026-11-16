@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import ThemeProvider from "@/components/shared/ThemeProvider";
 import "./globals.css";
 
@@ -12,6 +13,18 @@ const khmerOSBattambang = localFont({
     },
   ],
   variable: "--font-battambang",
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -28,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="km"
-      className={`${khmerOSBattambang.variable} h-full antialiased`}
+      className={`${inter.variable} ${khmerOSBattambang.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
