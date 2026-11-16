@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   PackageCheck, Search, Plus, X, Loader2, Warehouse, Truck, Boxes,
-  PackagePlus, Calendar, CheckCircle2, Clock, ArrowRight
+  PackagePlus, Calendar, CheckCircle2, Clock, ArrowRight, Printer
 } from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
+import PurchaseInvoiceModal from "@/components/purchases/PurchaseInvoiceModal";
 
 interface Supplier { id: number; name: string; }
 interface Ingredient { id: number; name: string; code: string; unit: string; cost: number | string; stock: number | string; }
@@ -66,6 +67,7 @@ export default function PurchasesPage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [receivingId, setReceivingId] = useState<number | null>(null);
+  const [printingPurchase, setPrintingPurchase] = useState<Purchase | null>(null);
   const [error, setError] = useState("");
   const [successToast, setSuccessToast] = useState("");
 
@@ -333,15 +335,15 @@ export default function PurchasesPage() {
         <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl text-xs font-semibold">
           {[
             { id: "ALL", label: t("common.all") || "All" },
-            { id: "PENDING", label: `⏳ ${t("purchases.statusPending")}` },
-            { id: "RECEIVED", label: `✅ ${t("purchases.statusReceived")}` },
+            { id: "PENDING", label: ` ${t("purchases.statusPending")}` },
+            { id: "RECEIVED", label: ` ${t("purchases.statusReceived")}` },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${statusFilter === tab.id
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
             >
               {tab.label}
@@ -389,8 +391,15 @@ export default function PurchasesPage() {
                   const isPending = status === "PENDING";
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="px-4 py-3 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                        {p.reference}
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setPrintingPurchase(p)}
+                          className="font-mono font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer text-left"
+                          title={t("purchases.printInvoice")}
+                        >
+                          {p.reference}
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         {isPending ? (
@@ -424,8 +433,8 @@ export default function PurchasesPage() {
                             return (
                               <div key={idx} className="text-xs flex items-center gap-1.5 flex-wrap">
                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isProduct
-                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                    : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                  : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
                                   }`}>
                                   {isProduct ? "Product" : "Ingredient"}
                                 </span>
@@ -447,29 +456,40 @@ export default function PurchasesPage() {
                       <td className="px-4 py-3 text-slate-500">{p.user?.name}</td>
                       <td className="px-4 py-3 text-slate-400 text-xs">{new Date(p.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
-                        {isPending ? (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleQuickReceive(p.id)}
-                              disabled={receivingId === p.id}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
-                            >
-                              {receivingId === p.id ? <Loader2 size={12} className="animate-spin" /> : <PackagePlus size={12} />}
-                              {t("purchases.receiveStockBtn")}
-                            </button>
-                            <Link
-                              href={`/receive-stock?ref=${p.reference}`}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
-                              title={t("receiveStock.reviewAndReceive")}
-                            >
-                              <ArrowRight size={14} />
-                            </Link>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">
-                            {p.receivedAt ? new Date(p.receivedAt).toLocaleDateString() : "Completed"}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Print / View Invoice Button */}
+                          <button
+                            type="button"
+                            onClick={() => setPrintingPurchase(p)}
+                            title={t("purchases.printInvoice")}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Printer size={13} className="text-indigo-600 dark:text-indigo-400" />
+                            <span>{t("purchases.viewInvoice")}</span>
+                          </button>
+
+                          {/* If PENDING, show Receive actions */}
+                          {isPending && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickReceive(p.id)}
+                                disabled={receivingId === p.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {receivingId === p.id ? <Loader2 size={12} className="animate-spin" /> : <PackagePlus size={12} />}
+                                <span>{t("purchases.receiveStockBtn")}</span>
+                              </button>
+                              <Link
+                                href={`/receive-stock?ref=${p.reference}`}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                                title={t("receiveStock.reviewAndReceive")}
+                              >
+                                <ArrowRight size={14} />
+                              </Link>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -677,9 +697,9 @@ export default function PurchasesPage() {
                   </div>
 
                   <div className="mt-4 flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                    <p className="text-xs text-slate-500">
+                    {/* <p className="text-xs text-slate-500">
                       ℹ️ Note: Saving this PO will create it in <strong>Pending</strong> status. Stock is intake-ready and added only when received in the Receive Stock screen.
-                    </p>
+                    </p> */}
                     <div className="text-right">
                       <p className="text-xs uppercase font-bold text-slate-400">{t("purchases.colTotal")}</p>
                       <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">${totalCost.toFixed(2)}</p>
@@ -710,6 +730,13 @@ export default function PurchasesPage() {
             </div>
           </div>
         </div>
+      )}
+      {/* Purchase Invoice Print Modal */}
+      {printingPurchase && (
+        <PurchaseInvoiceModal
+          purchase={printingPurchase}
+          onClose={() => setPrintingPurchase(null)}
+        />
       )}
     </div>
   );

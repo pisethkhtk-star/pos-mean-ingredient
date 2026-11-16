@@ -20,9 +20,11 @@ import {
   ArrowRight,
   ShieldCheck,
   Ban,
-  Check
+  Check,
+  Printer
 } from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
+import PurchaseInvoiceModal from "@/components/purchases/PurchaseInvoiceModal";
 
 interface Supplier {
   id: number;
@@ -93,6 +95,7 @@ function ReceiveStockContent() {
   // Cancel Confirmation Modal State
   const [cancellingPurchase, setCancellingPurchase] = useState<Purchase | null>(null);
   const [submittingCancel, setSubmittingCancel] = useState(false);
+  const [printingPurchase, setPrintingPurchase] = useState<Purchase | null>(null);
 
   const fetchPurchases = useCallback(async () => {
     setLoading(true);
@@ -259,14 +262,14 @@ function ReceiveStockContent() {
           </h1>
           <p className="text-sm text-slate-500 mt-1">{t("receiveStock.subtitle")}</p>
         </div>
-        <Link
+        {/* <Link
           href="/purchases"
           className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
         >
           <Boxes size={16} />
           <span>{t("nav.purchases")}</span>
           <ArrowRight size={14} className="text-slate-400" />
-        </Link>
+        </Link> */}
       </div>
 
       {/* Stats Cards */}
@@ -320,11 +323,10 @@ function ReceiveStockContent() {
         <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl text-sm font-semibold">
           <button
             onClick={() => setActiveTab("TO_RECEIVE")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-              activeTab === "TO_RECEIVE"
-                ? "bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer ${activeTab === "TO_RECEIVE"
+              ? "bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
           >
             <Clock size={16} />
             <span>{t("receiveStock.toReceiveTab")}</span>
@@ -336,11 +338,10 @@ function ReceiveStockContent() {
           </button>
           <button
             onClick={() => setActiveTab("RECEIVED")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-              activeTab === "RECEIVED"
-                ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer ${activeTab === "RECEIVED"
+              ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
           >
             <CheckCircle2 size={16} />
             <span>{t("receiveStock.receivedTab")}</span>
@@ -387,9 +388,14 @@ function ReceiveStockContent() {
                 {/* Order Top Bar */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-mono text-base font-bold text-indigo-600 dark:text-indigo-400">
+                    <button
+                      type="button"
+                      onClick={() => setPrintingPurchase(purchase)}
+                      className="font-mono text-base font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer text-left"
+                      title={t("purchases.printInvoice")}
+                    >
                       {purchase.reference}
-                    </span>
+                    </button>
                     {isPending ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                         <Clock size={12} /> {t("purchases.statusPending")}
@@ -408,7 +414,18 @@ function ReceiveStockContent() {
                   </div>
 
                   {/* Actions for this PO */}
-                  <div className="flex items-center gap-2 self-end sm:self-center">
+                  <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
+                    {/* Print / View Invoice Button */}
+                    <button
+                      type="button"
+                      onClick={() => setPrintingPurchase(purchase)}
+                      title={t("purchases.printInvoice")}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <Printer size={13} className="text-indigo-600 dark:text-indigo-400" />
+                      <span>{t("purchases.viewInvoice")}</span>
+                    </button>
+
                     {isPending ? (
                       <>
                         <button
@@ -433,11 +450,11 @@ function ReceiveStockContent() {
                         </button>
                       </>
                     ) : (
-                      <div className="text-right text-xs text-slate-500">
+                      <div className="text-right text-xs text-slate-500 pl-2">
                         <p>
                           <span className="font-semibold">{t("receiveStock.receivedAt")}:</span>{" "}
                           {purchase.receivedAt
-                            ? new Date(purchase.receivedAt).toLocaleString()
+                            ? new Date(purchase.receivedAt).toLocaleDateString()
                             : new Date(purchase.createdAt).toLocaleDateString()}
                         </p>
                         {purchase.receivedBy && (
@@ -473,11 +490,10 @@ function ReceiveStockContent() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                               <span
-                                className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                                  isProduct
-                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                                    : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300"
-                                }`}
+                                className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${isProduct
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                  : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300"
+                                  }`}
                               >
                                 {isProduct ? "Product" : "Ingredient"}
                               </span>
@@ -486,7 +502,7 @@ function ReceiveStockContent() {
                               </strong>
                             </div>
                             <p className="text-slate-500 font-mono">
-                              {code && `[${code}]`} {Number(item.quantity)} {unit} @ $
+                              {Number(item.quantity)} {unit}  $
                               {Number(item.cost).toFixed(4)}/{unit}
                             </p>
                             {item.expiryDate ? (
@@ -703,6 +719,13 @@ function ReceiveStockContent() {
             </div>
           </div>
         </div>
+      )}
+      {/* Purchase Invoice Modal */}
+      {printingPurchase && (
+        <PurchaseInvoiceModal
+          purchase={printingPurchase}
+          onClose={() => setPrintingPurchase(null)}
+        />
       )}
     </div>
   );
