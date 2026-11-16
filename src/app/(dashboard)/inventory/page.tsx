@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Warehouse, Search, Plus, RefreshCw, ArrowUp, ArrowDown, SlidersHorizontal, Loader2, X, Boxes, ShoppingBag } from "lucide-react";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface InventoryLog {
   id: number;
@@ -29,6 +30,7 @@ const typeBadge: Record<string, string> = {
 };
 
 export default function InventoryPage() {
+  const { t } = useLanguageStore();
   const [logs, setLogs] = useState<InventoryLog[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -104,16 +106,16 @@ export default function InventoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Warehouse size={24} className="text-indigo-600 dark:text-indigo-400" />
-            Inventory & Stock Audit
+            {t("inventory.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{logs.length} stock movement audit records</p>
+          <p className="text-sm text-slate-500 mt-0.5">{logs.length} {t("inventory.auditCount")}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={fetchLogs} className="p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
             <RefreshCw size={16} />
           </button>
           <button onClick={() => { setError(""); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
-            <Plus size={16} /> Adjust Stock
+            <Plus size={16} /> {t("inventory.adjustStock")}
           </button>
         </div>
       </div>
@@ -121,10 +123,10 @@ export default function InventoryPage() {
       {/* Stock Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Raw Ingredients", value: ingredients.length, icon: Boxes, color: "indigo" },
-          { label: "Low Stock Ingredients", value: ingredients.filter(i => Number(i.stock) <= Number(i.minStock)).length, icon: ArrowDown, color: "rose" },
-          { label: "Stock IN Logs Today", value: logs.filter(l => (l.type === "IN" || l.type === "PURCHASE_IN") && new Date(l.createdAt).toDateString() === new Date().toDateString()).length, icon: ArrowUp, color: "emerald" },
-          { label: "Stock OUT Logs Today", value: logs.filter(l => (l.type === "OUT" || l.type === "ORDER_OUT") && new Date(l.createdAt).toDateString() === new Date().toDateString()).length, icon: ArrowDown, color: "amber" },
+          { label: t("inventory.rawIngredients"), value: ingredients.length, icon: Boxes, color: "indigo" },
+          { label: t("inventory.lowStockIngredients"), value: ingredients.filter(i => Number(i.stock) <= Number(i.minStock)).length, icon: ArrowDown, color: "rose" },
+          { label: t("inventory.stockInToday"), value: logs.filter(l => (l.type === "IN" || l.type === "PURCHASE_IN") && new Date(l.createdAt).toDateString() === new Date().toDateString()).length, icon: ArrowUp, color: "emerald" },
+          { label: t("inventory.stockOutToday"), value: logs.filter(l => (l.type === "OUT" || l.type === "ORDER_OUT") && new Date(l.createdAt).toDateString() === new Date().toDateString()).length, icon: ArrowDown, color: "amber" },
         ].map(s => {
           const Icon = s.icon;
           const colors: Record<string, string> = { indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400", rose: "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400", emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400", amber: "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400" };
@@ -140,7 +142,7 @@ export default function InventoryPage() {
       {/* Search */}
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input type="text" placeholder="Filter by item name or code..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder={t("inventory.filterPlaceholder")} value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
       </div>
 
@@ -153,7 +155,7 @@ export default function InventoryPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {["Target Item", "Code", "Type", "Qty", "Before", "After", "Note", "By", "Date"].map(h => (
+                  {[t("inventory.colTargetItem"), t("inventory.colCode"), t("inventory.colType"), t("inventory.colQty"), t("inventory.colBefore"), t("inventory.colAfter"), t("inventory.colNote"), t("inventory.colBy"), t("inventory.colDate")].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -216,14 +218,14 @@ export default function InventoryPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-              <h2 className="font-bold text-slate-900 dark:text-slate-100">Manual Stock Adjustment</h2>
+              <h2 className="font-bold text-slate-900 dark:text-slate-100">{t("inventory.adjustStock")}</h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X size={18} /></button>
             </div>
             <form onSubmit={handleAdjust} className="p-6 space-y-4">
               {error && <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 rounded-xl text-sm">{error}</div>}
               
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Category</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">{t("inventory.targetCategory")}</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -234,7 +236,7 @@ export default function InventoryPage() {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    <Boxes size={14} /> Raw Ingredient
+                    <Boxes size={14} /> {t("inventory.ingredient")}
                   </button>
                   <button
                     type="button"
@@ -245,54 +247,54 @@ export default function InventoryPage() {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    <ShoppingBag size={14} /> Finished Product
+                    <ShoppingBag size={14} /> {t("inventory.product")}
                   </button>
                 </div>
               </div>
 
               {targetCategory === "INGREDIENT" ? (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Raw Ingredient</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("inventory.ingredient")}</label>
                   <select value={form.ingredientId} onChange={e => setForm(p => ({ ...p, ingredientId: e.target.value }))} required className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
-                    <option value="">Select ingredient...</option>
+                    <option value="">{t("common.search")}</option>
                     {ingredients.map(ing => <option key={ing.id} value={ing.id}>{ing.name} (Stock: {ing.stock} {ing.unit})</option>)}
                   </select>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Product</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("inventory.product")}</label>
                   <select value={form.productId} onChange={e => setForm(p => ({ ...p, productId: e.target.value }))} required className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
-                    <option value="">Select product...</option>
+                    <option value="">{t("common.search")}</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>)}
                   </select>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Adjustment Type</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">{t("ingredients.adjustType")}</label>
                 <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none">
-                  <option value="IN">IN — Add Stock</option>
-                  <option value="OUT">OUT — Deduct Stock</option>
-                  <option value="ADJUSTMENT">ADJUSTMENT — Inventory Audit</option>
+                  <option value="IN">{t("ingredients.stockIn")}</option>
+                  <option value="OUT">{t("ingredients.stockOut")}</option>
+                  <option value="ADJUSTMENT">{t("ingredients.stockSet")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Quantity</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">{t("inventory.colQty")}</label>
                 <input type="number" step="0.01" min="0.01" required value={form.quantity} onChange={e => setForm(p => ({ ...p, quantity: e.target.value }))} placeholder="0.00"
                   className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none" />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Note / Reason</label>
-                <input type="text" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} placeholder="Audit reason or details"
+                <label className="block text-xs font-semibold text-slate-500 mb-1">{t("inventory.colNote")}</label>
+                <input type="text" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} placeholder={t("inventory.colNote")}
                   className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none" />
               </div>
 
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">{t("common.cancel")}</button>
                 <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors">
-                  {saving && <Loader2 size={14} className="animate-spin" />} Confirm Adjustment
+                  {saving && <Loader2 size={14} className="animate-spin" />} {t("common.confirm")}
                 </button>
               </div>
             </form>

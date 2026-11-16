@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { Settings as SettingsIcon, Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useLanguageStore } from "@/store/languageStore";
 
 export default function SettingsPage() {
+  const { t } = useLanguageStore();
   const updateSettings = useSettingsStore((state) => state.updateSettings);
   const [form, setForm] = useState({
     storeName: "",
@@ -69,7 +71,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         updateSettings(data);
-        setMessage({ type: "success", text: "Store settings updated successfully!" });
+        setMessage({ type: "success", text: t("settings.successMsg") });
       } else {
         const data = await res.json();
         setMessage({ type: "error", text: data.error || "Failed to update settings" });
@@ -96,9 +98,9 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <SettingsIcon size={24} className="text-indigo-600 dark:text-indigo-400" />
-          Store & Tax Settings
+          {t("settings.title")}
         </h1>
-        <p className="text-sm text-slate-500 mt-0.5">Configure store information and tax rates for invoice calculations</p>
+        <p className="text-sm text-slate-500 mt-0.5">{t("settings.subtitle")}</p>
       </div>
 
       <form onSubmit={handleSave} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
@@ -116,7 +118,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Store Name */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Store Name</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{t("settings.storeName")}</label>
             <input 
               type="text" 
               required
@@ -129,7 +131,7 @@ export default function SettingsPage() {
 
           {/* Store Phone */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Contact Phone</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{t("settings.storePhone")}</label>
             <input 
               type="text"
               value={form.storePhone}
@@ -141,7 +143,7 @@ export default function SettingsPage() {
 
           {/* Tax Rate */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Tax Rate (%)</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{t("settings.taxRate")}</label>
             <input 
               type="number"
               required
@@ -156,7 +158,7 @@ export default function SettingsPage() {
 
           {/* Store Address */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Store Address</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{t("settings.storeAddress")}</label>
             <textarea 
               rows={2}
               value={form.storeAddress}
@@ -168,7 +170,7 @@ export default function SettingsPage() {
 
           {/* Receipt Header */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Receipt Header Message</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{t("settings.receiptHeader")}</label>
             <textarea 
               rows={2}
               value={form.receiptHeader}
@@ -180,7 +182,7 @@ export default function SettingsPage() {
 
           {/* Receipt Footer */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Receipt Footer Message</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{t("settings.receiptFooter")}</label>
             <textarea 
               rows={2}
               value={form.receiptFooter}
@@ -198,7 +200,7 @@ export default function SettingsPage() {
             className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-sm transition-colors cursor-pointer disabled:opacity-60"
           >
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-            Save Store Settings
+            {saving ? t("settings.saving") : t("settings.save")}
           </button>
         </div>
       </form>

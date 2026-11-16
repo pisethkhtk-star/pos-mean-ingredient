@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/shared/Sidebar";
 import { useAuthStore } from "@/store/authStore";
+import { useLanguageStore } from "@/store/languageStore";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
@@ -12,6 +13,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuthStore();
+  const { t } = useLanguageStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -34,7 +36,7 @@ export default function DashboardLayout({
       <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center space-y-4">
           <Loader2 className="animate-spin text-indigo-600 mx-auto" size={48} />
-          <p className="text-sm font-medium text-slate-500">Loading your POS workspace...</p>
+          <p className="text-sm font-medium text-slate-500">{t("common.loading")}</p>
         </div>
       </div>
     );

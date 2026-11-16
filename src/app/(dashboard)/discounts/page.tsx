@@ -5,6 +5,7 @@ import {
   Tags, Search, Plus, Pencil, Trash2, X,
   Ticket, Loader2, Calendar, Check, Ban
 } from "lucide-react";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface Discount {
   id: number;
@@ -28,6 +29,7 @@ const emptyForm = {
 };
 
 export default function DiscountsPage() {
+  const { t } = useLanguageStore();
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -159,15 +161,15 @@ export default function DiscountsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Ticket size={24} className="text-indigo-600 dark:text-indigo-400" />
-            Promo & Discounts
+            {t("discounts.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{discounts.length} active discount offers</p>
+          <p className="text-sm text-slate-500 mt-0.5">{discounts.length} {t("discounts.promoCount")}</p>
         </div>
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
         >
-          <Plus size={16} /> Add Promo / Discount
+          <Plus size={16} /> {t("discounts.addDiscount")}
         </button>
       </div>
 
@@ -177,7 +179,7 @@ export default function DiscountsPage() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by promo name..."
+            placeholder={t("discounts.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
@@ -194,14 +196,14 @@ export default function DiscountsPage() {
         ) : filteredDiscounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
             <Tags size={36} className="opacity-40" />
-            <p>No discount offers found</p>
+            <p>{t("common.noData")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {["Name / Code", "Type", "Discount Value", "Min. Purchase", "Date Range", "Status", ""].map((h) => (
+                  {[t("discounts.colName"), t("discounts.colType"), t("discounts.colValue"), t("discounts.colMinPurchase"), t("discounts.colDateRange"), t("discounts.colStatus"), ""].map((h) => (
                     <th
                       key={h}
                       className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
@@ -218,11 +220,11 @@ export default function DiscountsPage() {
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">
-                      {d.name || <span className="text-slate-400 italic">No name/code</span>}
+                      {d.name || <span className="text-slate-400 italic">—</span>}
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
-                        {d.type === "PERCENT" ? "Percentage (%)" : "Fixed Amount ($)"}
+                        {d.type === "PERCENT" ? t("discounts.percent") : t("discounts.fixed")}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">
@@ -248,7 +250,7 @@ export default function DiscountsPage() {
                         }`}
                       >
                         {d.isActive ? <Check size={10} /> : <Ban size={10} />}
-                        {d.isActive ? "Active" : "Disabled"}
+                        {d.isActive ? t("discounts.active") : t("discounts.inactive")}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -281,7 +283,7 @@ export default function DiscountsPage() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20">
               <h2 className="font-bold text-slate-900 dark:text-slate-100">
-                {editing ? "Edit Discount Info" : "Create New Discount"}
+                {editing ? t("discounts.editDiscount") : t("discounts.addDiscount")}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -298,7 +300,7 @@ export default function DiscountsPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Promo Code / Name</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("discounts.name")}</label>
                   <input
                     type="text"
                     required
@@ -310,20 +312,20 @@ export default function DiscountsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Discount Type</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("discounts.type")}</label>
                   <select
                     value={form.type}
                     onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                   >
-                    <option value="PERCENT">Percentage (%)</option>
-                    <option value="FIXED">Fixed Amount ($)</option>
+                    <option value="PERCENT">{t("discounts.percent")}</option>
+                    <option value="FIXED">{t("discounts.fixed")}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">
-                    Value {form.type === "PERCENT" ? "(%)" : "($)"}
+                    {t("discounts.value")} {form.type === "PERCENT" ? "(%)" : "($)"}
                   </label>
                   <input
                     type="number"
@@ -338,7 +340,7 @@ export default function DiscountsPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Minimum Purchase ($)</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("discounts.minPurchase")}</label>
                   <input
                     type="number"
                     min="0"
@@ -351,7 +353,7 @@ export default function DiscountsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Start Date</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("discounts.startDate")}</label>
                   <input
                     type="date"
                     value={form.startDate}
@@ -361,7 +363,7 @@ export default function DiscountsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">End Date</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">{t("discounts.endDate")}</label>
                   <input
                     type="date"
                     value={form.endDate}
@@ -379,7 +381,7 @@ export default function DiscountsPage() {
                     className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                   />
                   <label htmlFor="isActive" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                    Active (Customers can apply this promo in POS)
+                    {t("discounts.active")}
                   </label>
                 </div>
               </div>
@@ -389,7 +391,7 @@ export default function DiscountsPage() {
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -397,7 +399,7 @@ export default function DiscountsPage() {
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors"
                 >
                   {saving && <Loader2 size={14} className="animate-spin" />}
-                  {editing ? "Save Changes" : "Create Promo"}
+                  {editing ? t("common.save") : t("discounts.addDiscount")}
                 </button>
               </div>
             </form>

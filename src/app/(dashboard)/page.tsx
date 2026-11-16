@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/store/authStore";
+import { useLanguageStore } from "@/store/languageStore";
 import {
   ShoppingBag,
   TrendingUp,
@@ -13,49 +14,6 @@ import {
   Activity,
 } from "lucide-react";
 
-const stats = [
-  {
-    label: "Today's Revenue",
-    value: "$4,280",
-    change: "+12.5%",
-    trend: "up",
-    icon: DollarSign,
-    color: "indigo",
-  },
-  {
-    label: "Orders Today",
-    value: "38",
-    change: "+8.2%",
-    trend: "up",
-    icon: ShoppingBag,
-    color: "emerald",
-  },
-  {
-    label: "Total Customers",
-    value: "1,243",
-    change: "+3.1%",
-    trend: "up",
-    icon: Users,
-    color: "violet",
-  },
-  {
-    label: "Low Stock Items",
-    value: "7",
-    change: "-2",
-    trend: "down",
-    icon: AlertTriangle,
-    color: "amber",
-  },
-];
-
-const recentOrders = [
-  { id: "#ORD-0038", customer: "Sophea Keo", amount: "$128.50", status: "COMPLETED", time: "2 min ago" },
-  { id: "#ORD-0037", customer: "Walk-in", amount: "$45.00", status: "COMPLETED", time: "15 min ago" },
-  { id: "#ORD-0036", customer: "Dara Mao", amount: "$210.75", status: "COMPLETED", time: "32 min ago" },
-  { id: "#ORD-0035", customer: "Walk-in", amount: "$32.00", status: "REFUNDED", time: "1 hr ago" },
-  { id: "#ORD-0034", customer: "Sreymom Chan", amount: "$95.25", status: "COMPLETED", time: "2 hr ago" },
-];
-
 const colorMap: Record<string, string> = {
   indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400",
   emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
@@ -65,16 +23,66 @@ const colorMap: Record<string, string> = {
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { t } = useLanguageStore();
+
+  const stats = [
+    {
+      label: t("dashboard.todayRevenue"),
+      value: "$4,280",
+      change: "+12.5%",
+      trend: "up",
+      icon: DollarSign,
+      color: "indigo",
+    },
+    {
+      label: t("dashboard.ordersToday"),
+      value: "38",
+      change: "+8.2%",
+      trend: "up",
+      icon: ShoppingBag,
+      color: "emerald",
+    },
+    {
+      label: t("dashboard.totalCustomers"),
+      value: "1,243",
+      change: "+3.1%",
+      trend: "up",
+      icon: Users,
+      color: "violet",
+    },
+    {
+      label: t("dashboard.lowStockItems"),
+      value: "7",
+      change: "-2",
+      trend: "down",
+      icon: AlertTriangle,
+      color: "amber",
+    },
+  ];
+
+  const recentOrders = [
+    { id: "#ORD-0038", customer: "Sophea Keo", amount: "$128.50", status: "COMPLETED", time: "2 min ago" },
+    { id: "#ORD-0037", customer: "Walk-in", amount: "$45.00", status: "COMPLETED", time: "15 min ago" },
+    { id: "#ORD-0036", customer: "Dara Mao", amount: "$210.75", status: "COMPLETED", time: "32 min ago" },
+    { id: "#ORD-0035", customer: "Walk-in", amount: "$32.00", status: "REFUNDED", time: "1 hr ago" },
+    { id: "#ORD-0034", customer: "Sreymom Chan", amount: "$95.25", status: "COMPLETED", time: "2 hr ago" },
+  ];
+
+  const quickActions = [
+    { label: t("dashboard.openPos"), href: "/pos", icon: TrendingUp, desc: t("dashboard.openPosDesc") },
+    { label: t("dashboard.addProduct"), href: "/products", icon: ShoppingBag, desc: t("dashboard.addProductDesc") },
+    { label: t("dashboard.viewReports"), href: "/reports", icon: Activity, desc: t("dashboard.viewReportsDesc") },
+  ];
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Welcome back, {user?.name?.split(" ")[0]} 👋
+          {t("dashboard.welcome")}, {user?.name?.split(" ")[0]} 👋
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Here&apos;s what&apos;s happening with your store today.
+          {t("dashboard.subtitle")}
         </p>
       </div>
 
@@ -109,7 +117,7 @@ export default function DashboardPage() {
                   ) : (
                     <ArrowDownRight size={12} />
                   )}
-                  {stat.change} vs yesterday
+                  {stat.change} {t("dashboard.vsYesterday")}
                 </p>
               </div>
             </div>
@@ -123,14 +131,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Activity size={18} className="text-indigo-600 dark:text-indigo-400" />
             <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-              Recent Orders
+              {t("dashboard.recentOrders")}
             </h2>
           </div>
           <a
             href="/orders"
             className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1"
           >
-            View all <ArrowUpRight size={12} />
+            {t("dashboard.viewAllOrders")} <ArrowUpRight size={12} />
           </a>
         </div>
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -147,7 +155,9 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                     {order.id}
                   </p>
-                  <p className="text-xs text-slate-500">{order.customer}</p>
+                  <p className="text-xs text-slate-500">
+                    {order.customer === "Walk-in" ? t("pos.walkInCustomer") : order.customer}
+                  </p>
                 </div>
               </div>
               <div className="text-right">
@@ -162,7 +172,7 @@ export default function DashboardPage() {
                         : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400"
                     }`}
                   >
-                    {order.status}
+                    {order.status === "COMPLETED" ? t("orders.statusCompleted") : t("orders.statusRefunded")}
                   </span>
                   <span className="text-[10px] text-slate-400">{order.time}</span>
                 </div>
@@ -174,11 +184,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {[
-          { label: "Open POS", href: "/pos", icon: TrendingUp, desc: "Process a new sale" },
-          { label: "Add Product", href: "/products", icon: ShoppingBag, desc: "Manage inventory" },
-          { label: "View Reports", href: "/reports", icon: Activity, desc: "Analyse performance" },
-        ].map((action) => {
+        {quickActions.map((action) => {
           const Icon = action.icon;
           return (
             <a

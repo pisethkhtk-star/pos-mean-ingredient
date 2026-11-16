@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   PackageCheck, Search, Plus, X, Loader2, Warehouse, Truck, Boxes
 } from "lucide-react";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface Supplier { id: number; name: string; }
 interface Ingredient { id: number; name: string; code: string; unit: string; cost: number | string; stock: number | string; }
@@ -22,6 +23,7 @@ interface NewPurchaseItem {
 }
 
 export default function PurchasesPage() {
+  const { t } = useLanguageStore();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -137,19 +139,19 @@ export default function PurchasesPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <PackageCheck size={24} className="text-indigo-600 dark:text-indigo-400" />
-            Ingredient Stock Purchases
+            {t("purchases.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">Stock IN raw materials and ingredients from suppliers</p>
+          <p className="text-sm text-slate-500 mt-0.5">{purchases.length} {t("purchases.orderCount")}</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
-          <Plus size={16} /> New Stock Purchase
+          <Plus size={16} /> {t("purchases.newPurchase")}
         </button>
       </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input type="text" placeholder="Search by PO Reference or Supplier..." value={query} onChange={e => setQuery(e.target.value)}
+        <input type="text" placeholder={t("purchases.searchPlaceholder")} value={query} onChange={e => setQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
       </div>
 
@@ -159,14 +161,14 @@ export default function PurchasesPage() {
           <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-indigo-500" size={28} /></div>
         ) : purchases.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
-            <Warehouse size={36} className="opacity-40" /><p>No ingredient purchases recorded</p>
+            <Warehouse size={36} className="opacity-40" /><p>{t("common.noData")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {["Reference", "Supplier", "Items Purchased", "Total Amount", "Note", "Received By", "Date"].map(h => (
+                  {[t("purchases.colRef"), t("purchases.colSupplier"), t("purchases.colItems"), t("purchases.colTotal"), t("purchases.note"), t("purchases.colCreatedBy"), t("purchases.colDate")].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -205,7 +207,7 @@ export default function PurchasesPage() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
               <h2 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Boxes size={18} className="text-indigo-500" /> Stock IN Raw Ingredients
+                <Boxes size={18} className="text-indigo-500" /> {t("purchases.createPurchaseOrder")}
               </h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X size={18} /></button>
             </div>
@@ -216,22 +218,22 @@ export default function PurchasesPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Supplier <span className="text-rose-500">*</span></label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("purchases.colSupplier")} <span className="text-rose-500">*</span></label>
                     <select value={supplierId} onChange={e => setSupplierId(e.target.value)} required className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
-                      <option value="">Select Supplier</option>
+                      <option value="">{t("purchases.selectSupplier")}</option>
                       {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Note / Reference (Optional)</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("purchases.note")}</label>
                     <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="PO-12345 or invoice details" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-bold text-slate-900 dark:text-slate-100">Ingredient Line Items</label>
-                    <button type="button" onClick={addItemRow} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1"><Plus size={12}/> Add Ingredient</button>
+                    <label className="block text-sm font-bold text-slate-900 dark:text-slate-100">{t("purchases.colItems")}</label>
+                    <button type="button" onClick={addItemRow} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1"><Plus size={12}/> {t("purchases.addItemRow")}</button>
                   </div>
                   
                   <div className="space-y-2">
@@ -240,9 +242,9 @@ export default function PurchasesPage() {
                       return (
                         <div key={index} className="flex gap-2 items-start bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50">
                           <div className="flex-1">
-                            <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Ingredient</label>
+                            <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">{t("products.ingredient")}</label>
                             <select value={item.ingredientId} onChange={e => handleIngredientSelect(index, e.target.value)} required className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
-                              <option value="">Select Raw Ingredient...</option>
+                              <option value="">{t("common.search")}</option>
                               {ingredients.map(ing => (
                                 <option key={ing.id} value={ing.id}>
                                   {ing.name} ({ing.code}) - {ing.unit}
@@ -252,13 +254,13 @@ export default function PurchasesPage() {
                           </div>
                           <div className="w-32">
                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
-                              Qty ({matchedIng?.unit || "unit"})
+                              {t("products.quantity")} ({matchedIng?.unit || "unit"})
                             </label>
                             <input type="number" step="0.01" min="0.01" required placeholder="Qty" value={item.quantity} onChange={e => updateItem(index, "quantity", e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
                           </div>
                           <div className="w-36">
                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
-                              Unit Cost ($)
+                              {t("ingredients.colUnitCost")}
                             </label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
@@ -276,7 +278,7 @@ export default function PurchasesPage() {
                   
                   <div className="mt-4 flex justify-end">
                     <div className="text-right">
-                      <p className="text-sm text-slate-500">Total Purchase Amount</p>
+                      <p className="text-sm text-slate-500">{t("purchases.colTotal")}</p>
                       <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">${totalCost.toFixed(2)}</p>
                     </div>
                   </div>
@@ -286,9 +288,9 @@ export default function PurchasesPage() {
             </div>
 
             <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 shrink-0 bg-slate-50 dark:bg-slate-900 rounded-b-2xl">
-              <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">Cancel</button>
+              <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">{t("common.cancel")}</button>
               <button type="submit" form="purchaseForm" disabled={saving || !supplierId || items.some(i => !i.ingredientId)} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors">
-                {saving && <Loader2 size={14} className="animate-spin" />} Confirm Purchase & Stock IN
+                {saving && <Loader2 size={14} className="animate-spin" />} {t("common.confirm")}
               </button>
             </div>
           </div>

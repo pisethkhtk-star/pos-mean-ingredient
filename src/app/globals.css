@@ -7,7 +7,6 @@
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D;
 }
 
 @font-face {
@@ -16,7 +15,6 @@
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D;
 }
 
 @theme {
@@ -28,7 +26,17 @@
 
 /* Custom global styles & utility classes */
 html, body, button, input, select, textarea, div, p, span, h1, h2, h3, h4, h5, h6, a, label, table, th, td {
-  font-family: var(--font-sans), "Khmer OS Battambang", "Battambang", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-battambang), "Khmer OS Battambang", var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+html[lang="km"],
+html[lang="km"] * {
+  font-family: var(--font-battambang), "Khmer OS Battambang", system-ui, -apple-system, sans-serif !important;
+}
+
+html[lang="en"],
+html[lang="en"] * {
+  font-family: var(--font-sans), var(--font-battambang), "Khmer OS Battambang", system-ui, -apple-system, sans-serif !important;
 }
 
 /* Custom print styles for the thermal receipt simulation */

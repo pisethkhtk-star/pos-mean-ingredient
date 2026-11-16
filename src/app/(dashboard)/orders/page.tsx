@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, Search, ChevronDown, Eye, X, Loader2, Package, Download } from "lucide-react";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface OrderItem { id: number; quantity: number; price: number; subtotal: number; product: { name: string; code: string }; }
 interface Order {
@@ -22,6 +23,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const { t } = useLanguageStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -85,13 +87,13 @@ export default function OrdersPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <ClipboardList size={24} className="text-indigo-600 dark:text-indigo-400" />
-            Orders
+            {t("orders.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{orders.length} orders · Revenue: ${totalRevenue.toFixed(2)}</p>
+          <p className="text-sm text-slate-500 mt-0.5">{orders.length} {t("orders.orderCount")} · {t("orders.revenue")}: ${totalRevenue.toFixed(2)}</p>
         </div>
-        <button onClick={exportToCSV} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+        <button onClick={exportToCSV} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer">
           <Download size={16} />
-          Export Excel
+          {t("orders.exportExcel")}
         </button>
       </div>
 
@@ -99,13 +101,17 @@ export default function OrdersPage() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-52">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search order # or customer..." value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder={t("orders.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
         </div>
         <div className="relative">
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="appearance-none pl-3 pr-8 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-sm focus:outline-none cursor-pointer">
-            {["ALL", "COMPLETED", "PENDING", "REFUNDED", "CANCELLED"].map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="ALL">{t("orders.allStatuses")}</option>
+            <option value="COMPLETED">{t("orders.statusCompleted")}</option>
+            <option value="PENDING">{t("orders.statusPending")}</option>
+            <option value="REFUNDED">{t("orders.statusRefunded")}</option>
+            <option value="CANCELLED">{t("orders.statusCancelled")}</option>
           </select>
           <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
@@ -121,14 +127,14 @@ export default function OrdersPage() {
           <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-indigo-500" size={28} /></div>
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
-            <Package size={36} className="opacity-40" /><p>No orders found</p>
+            <Package size={36} className="opacity-40" /><p>{t("common.noData")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {["Order #", "Customer", "Cashier", "Payment", "Items", "Total", "Status", "Date", ""].map(h => (
+                  {[t("orders.colOrderNum"), t("orders.colCustomer"), t("orders.colCashier"), t("orders.colPayment"), t("orders.colItems"), t("orders.colTotal"), t("orders.colStatus"), t("orders.colDate"), ""].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -137,7 +143,7 @@ export default function OrdersPage() {
                 {orders.map(o => (
                   <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-4 py-3 font-mono font-semibold text-indigo-600 dark:text-indigo-400 text-xs">{o.orderNumber}</td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{o.customer?.name || <span className="text-slate-400">Walk-in</span>}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{o.customer?.name || <span className="text-slate-400">{t("pos.walkInCustomer")}</span>}</td>
                     <td className="px-4 py-3 text-slate-500">{o.user.name}</td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-xs font-medium">{o.paymentMethod.replace("_", " ")}</span>
@@ -173,7 +179,12 @@ export default function OrdersPage() {
             <div className="overflow-y-auto p-6 space-y-4">
               {/* Info */}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {[{ l: "Customer", v: selected.customer?.name || "Walk-in" }, { l: "Cashier", v: selected.user.name }, { l: "Payment", v: selected.paymentMethod.replace("_", " ") }, { l: "Status", v: selected.status }].map(row => (
+                {[
+                  { l: t("orders.colCustomer"), v: selected.customer?.name || t("pos.walkInCustomer") },
+                  { l: t("orders.colCashier"), v: selected.user.name },
+                  { l: t("orders.colPayment"), v: selected.paymentMethod.replace("_", " ") },
+                  { l: t("orders.colStatus"), v: selected.status }
+                ].map(row => (
                   <div key={row.l}><p className="text-xs text-slate-400">{row.l}</p><p className="font-semibold text-slate-800 dark:text-slate-200">{row.v}</p></div>
                 ))}
               </div>
@@ -182,7 +193,7 @@ export default function OrdersPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-                      {["Product", "Qty", "Price", "Subtotal"].map(h => <th key={h} className="px-3 py-2 text-left font-semibold text-slate-500">{h}</th>)}
+                      {[t("products.colProduct"), t("pos.itemsCount"), t("products.colPrice"), t("pos.subtotal")].map(h => <th key={h} className="px-3 py-2 text-left font-semibold text-slate-500">{h}</th>)}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -199,16 +210,20 @@ export default function OrdersPage() {
               </div>
               {/* Totals */}
               <div className="space-y-1 text-sm border-t border-slate-200 dark:border-slate-800 pt-3">
-                {[{ l: "Subtotal", v: `$${Number(selected.subtotal).toFixed(2)}` }, { l: "Discount", v: `-$${Number(selected.discount).toFixed(2)}` }, { l: "Tax", v: `$${Number(selected.tax).toFixed(2)}` }].map(r => (
+                {[
+                  { l: t("pos.subtotal"), v: `$${Number(selected.subtotal).toFixed(2)}` },
+                  { l: t("pos.discount"), v: `-$${Number(selected.discount).toFixed(2)}` },
+                  { l: t("pos.tax"), v: `$${Number(selected.tax).toFixed(2)}` }
+                ].map(r => (
                   <div key={r.l} className="flex justify-between text-slate-500"><span>{r.l}</span><span>{r.v}</span></div>
                 ))}
                 <div className="flex justify-between font-bold text-base text-slate-900 dark:text-slate-100 pt-1 border-t border-slate-200 dark:border-slate-800">
-                  <span>Total</span><span className="text-indigo-600 dark:text-indigo-400">${Number(selected.total).toFixed(2)}</span>
+                  <span>{t("pos.total")}</span><span className="text-indigo-600 dark:text-indigo-400">${Number(selected.total).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-slate-500"><span>Paid</span><span>${Number(selected.amountPaid).toFixed(2)}</span></div>
-                <div className="flex justify-between text-slate-500"><span>Change</span><span>${Number(selected.change).toFixed(2)}</span></div>
+                <div className="flex justify-between text-slate-500"><span>{t("payment.amountReceived")}</span><span>${Number(selected.amountPaid).toFixed(2)}</span></div>
+                <div className="flex justify-between text-slate-500"><span>{t("payment.change")}</span><span>${Number(selected.change).toFixed(2)}</span></div>
               </div>
-              {selected.note && <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl text-xs text-slate-500"><span className="font-semibold">Note: </span>{selected.note}</div>}
+              {selected.note && <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl text-xs text-slate-500"><span className="font-semibold">{t("inventory.colNote")}: </span>{selected.note}</div>}
             </div>
           </div>
         </div>

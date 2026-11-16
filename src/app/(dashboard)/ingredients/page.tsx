@@ -16,6 +16,7 @@ import {
   FileText,
   Sliders,
 } from "lucide-react";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface Ingredient {
   id: number;
@@ -51,6 +52,7 @@ const emptyForm = {
 };
 
 export default function IngredientsPage() {
+  const { t } = useLanguageStore();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -235,17 +237,14 @@ export default function IngredientsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Boxes className="text-indigo-600 dark:text-indigo-400" /> Ingredients Management
+            <Boxes className="text-indigo-600 dark:text-indigo-400" /> {t("ingredients.title")}
           </h1>
-          {/* <p className="text-sm text-slate-500 dark:text-slate-400">
-            Track raw materials, unit costs, and inventory stock used for product recipes.
-          </p> */}
         </div>
         <button
           onClick={openAdd}
           className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors cursor-pointer"
         >
-          <Plus size={18} /> Add Ingredient
+          <Plus size={18} /> {t("ingredients.addIngredient")}
         </button>
       </div>
 
@@ -255,7 +254,7 @@ export default function IngredientsPage() {
           <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by ingredient name or code..."
+            placeholder={t("ingredients.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
@@ -270,7 +269,7 @@ export default function IngredientsPage() {
                 : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"
               }`}
           >
-            <AlertTriangle size={14} /> Low Stock Only
+            <AlertTriangle size={14} /> {t("ingredients.lowStockOnly")}
           </button>
         </div>
       </div>
@@ -279,14 +278,14 @@ export default function IngredientsPage() {
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center p-12 text-slate-400">
-            <Loader2 className="animate-spin mr-2" size={24} /> Loading ingredients...
+            <Loader2 className="animate-spin mr-2" size={24} /> {t("ingredients.loading")}
           </div>
         ) : ingredients.length === 0 ? (
           <div className="p-12 text-center text-slate-500 dark:text-slate-400">
             <Boxes className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600 mb-3" />
-            <p className="text-base font-semibold">No ingredients found</p>
+            <p className="text-base font-semibold">{t("ingredients.noIngredients")}</p>
             <p className="text-xs text-slate-400 mt-1">
-              {search || lowStockOnly ? "Try clearing search or filters." : "Get started by adding raw materials and ingredients."}
+              {search || lowStockOnly ? "Try clearing search or filters." : t("ingredients.noIngredientsSub")}
             </p>
           </div>
         ) : (
@@ -294,15 +293,15 @@ export default function IngredientsPage() {
             <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-4 py-3">Code</th>
-                  <th className="px-4 py-3">Ingredient Name</th>
-                  <th className="px-4 py-3">Unit</th>
-                  <th className="px-4 py-3 text-right">Unit Cost ($)</th>
-                  <th className="px-4 py-3 text-right">Current Stock</th>
-                  <th className="px-4 py-3 text-right">Min Stock</th>
-                  <th className="px-4 py-3 text-center">Status</th>
-                  <th className="px-4 py-3 text-center">Recipes</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">{t("ingredients.colCode")}</th>
+                  <th className="px-4 py-3">{t("ingredients.colName")}</th>
+                  <th className="px-4 py-3">{t("ingredients.colUnit")}</th>
+                  <th className="px-4 py-3 text-right">{t("ingredients.colUnitCost")}</th>
+                  <th className="px-4 py-3 text-right">{t("ingredients.colCurrentStock")}</th>
+                  <th className="px-4 py-3 text-right">{t("ingredients.colMinStock")}</th>
+                  <th className="px-4 py-3 text-center">{t("ingredients.colStatus")}</th>
+                  <th className="px-4 py-3 text-center">{t("ingredients.colRecipes")}</th>
+                  <th className="px-4 py-3 text-right">{t("ingredients.colActions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -337,15 +336,15 @@ export default function IngredientsPage() {
                       <td className="px-4 py-3 text-center">
                         {isOutOfStock ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                            <XCircle size={12} /> Out of Stock
+                            <XCircle size={12} /> {t("ingredients.outOfStock")}
                           </span>
                         ) : isLowStock ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                            <AlertTriangle size={12} /> Low Stock
+                            <AlertTriangle size={12} /> {t("ingredients.lowStock")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                            <CheckCircle2 size={12} /> In Stock
+                            <CheckCircle2 size={12} /> {t("ingredients.inStock")}
                           </span>
                         )}
                       </td>
@@ -355,7 +354,7 @@ export default function IngredientsPage() {
                           className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                         >
                           <FileText size={12} />
-                          {ing._count?.productItems || 0} product(s)
+                          {ing._count?.productItems || 0} {t("ingredients.productsCount")}
                         </button>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -417,7 +416,7 @@ export default function IngredientsPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Boxes className="text-indigo-600 dark:text-indigo-400" size={20} />
-                {editing ? "Edit Ingredient" : "Add New Ingredient"}
+                {editing ? t("ingredients.editIngredient") : t("ingredients.addIngredient")}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -436,7 +435,7 @@ export default function IngredientsPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Ingredient Name <span className="text-rose-500">*</span>
+                  {t("ingredients.nameLabel")} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -451,7 +450,7 @@ export default function IngredientsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Ingredient Code
+                    {t("ingredients.colCode")}
                   </label>
                   <input
                     type="text"
@@ -463,7 +462,7 @@ export default function IngredientsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Measurement Unit <span className="text-rose-500">*</span>
+                    {t("ingredients.unitLabel")} <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={form.unit}
@@ -482,7 +481,7 @@ export default function IngredientsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Unit Cost Price ($)
+                    {t("ingredients.costLabel")}
                   </label>
                   <input
                     type="number"
@@ -496,7 +495,7 @@ export default function IngredientsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Min Stock Threshold
+                    {t("ingredients.minStockAlert")}
                   </label>
                   <input
                     type="number"
@@ -513,7 +512,7 @@ export default function IngredientsPage() {
               {!editing && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Initial Stock Level ({form.unit})
+                    {t("ingredients.initialStock")} ({form.unit})
                   </label>
                   <input
                     type="number"
@@ -533,15 +532,15 @@ export default function IngredientsPage() {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {saving && <Loader2 className="animate-spin" size={14} />}
-                  {editing ? "Save Changes" : "Create Ingredient"}
+                  {saving && <Loader2 size={14} className="animate-spin" />}
+                  {editing ? t("common.save") : t("ingredients.addIngredient")}
                 </button>
               </div>
             </form>
@@ -555,7 +554,7 @@ export default function IngredientsPage() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <ArrowUpDown className="text-indigo-600" size={18} /> Adjust Stock for {adjustTarget.name}
+                <ArrowUpDown className="text-indigo-600" size={18} /> {t("ingredients.adjustStock")}: {adjustTarget.name}
               </h3>
               <button onClick={() => setShowAdjustModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={18} />
@@ -563,7 +562,7 @@ export default function IngredientsPage() {
             </div>
 
             <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex justify-between text-xs">
-              <span className="text-slate-500">Current Stock:</span>
+              <span className="text-slate-500">{t("ingredients.colCurrentStock")}:</span>
               <span className="font-bold text-slate-900 dark:text-white">
                 {Number(adjustTarget.stock).toLocaleString()} {adjustTarget.unit}
               </span>
@@ -576,7 +575,7 @@ export default function IngredientsPage() {
             <form onSubmit={handleAdjustSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Adjustment Action
+                  {t("ingredients.adjustType")}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
@@ -587,7 +586,7 @@ export default function IngredientsPage() {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                   >
-                    + Stock IN
+                    {t("ingredients.stockIn")}
                   </button>
                   <button
                     type="button"
@@ -597,7 +596,7 @@ export default function IngredientsPage() {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                   >
-                    - Stock OUT
+                    {t("ingredients.stockOut")}
                   </button>
                   <button
                     type="button"
@@ -607,14 +606,14 @@ export default function IngredientsPage() {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                   >
-                    Adjustment
+                    {t("ingredients.stockSet")}
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Quantity ({adjustTarget.unit})
+                  {t("ingredients.quantity")} ({adjustTarget.unit})
                 </label>
                 <input
                   type="number"
@@ -630,7 +629,7 @@ export default function IngredientsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Note / Reason
+                  {t("ingredients.note")}
                 </label>
                 <input
                   type="text"
@@ -647,7 +646,7 @@ export default function IngredientsPage() {
                   onClick={() => setShowAdjustModal(false)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"

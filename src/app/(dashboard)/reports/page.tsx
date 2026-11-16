@@ -11,6 +11,7 @@ import {
   PieChart as PieIcon
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface ReportData {
   summary: {
@@ -44,6 +45,7 @@ interface ReportData {
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e'];
 
 export default function ReportsPage() {
+  const { t } = useLanguageStore();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,8 +90,8 @@ export default function ReportsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
         <Activity size={48} className="text-slate-300 mb-4" />
-        <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Access Denied</h2>
-        <p className="text-slate-500 mt-2">Only administrators can view reports.</p>
+        <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">{t("reports.accessDenied")}</h2>
+        <p className="text-slate-500 mt-2">{t("reports.adminOnly")}</p>
       </div>
     );
   }
@@ -100,10 +102,10 @@ export default function ReportsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Activity className="text-indigo-600" /> Business Reports
+            <Activity className="text-indigo-600" /> {t("reports.title")}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Analyze your store&apos;s performance and metrics.
+            {t("reports.subtitle")}
           </p>
         </div>
         
@@ -126,9 +128,9 @@ export default function ReportsPage() {
           </div>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
           >
-            <Download size={16} /> Export
+            <Download size={16} /> {t("receipt.print")}
           </button>
         </div>
       </div>
@@ -141,7 +143,7 @@ export default function ReportsPage() {
         </div>
       ) : error ? (
         <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-6 rounded-2xl border border-rose-200 dark:border-rose-800">
-          <p className="font-semibold text-lg mb-2">Error loading reports</p>
+          <p className="font-semibold text-lg mb-2">{t("common.error")}</p>
           <p>{error}</p>
         </div>
       ) : data ? (
@@ -149,28 +151,28 @@ export default function ReportsPage() {
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard 
-              title="Total Revenue" 
+              title={t("reports.totalRevenue")} 
               value={formatCurrency(data.summary.totalRevenue)} 
               icon={DollarSign} 
               color="text-indigo-600" 
               bg="bg-indigo-100 dark:bg-indigo-900/40" 
             />
             <StatCard 
-              title="Net Profit" 
+              title={t("reports.netProfit")} 
               value={formatCurrency(data.summary.netProfit)} 
               icon={TrendingUp} 
               color="text-emerald-600" 
               bg="bg-emerald-100 dark:bg-emerald-900/40" 
             />
             <StatCard 
-              title="Total Orders" 
+              title={t("reports.totalOrders")} 
               value={data.summary.orderCount.toString()} 
               icon={ShoppingBag} 
               color="text-violet-600" 
               bg="bg-violet-100 dark:bg-violet-900/40" 
             />
             <StatCard 
-              title="Avg. Order Value" 
+              title={t("reports.averageOrder")} 
               value={formatCurrency(data.summary.avgOrderValue)} 
               icon={Activity} 
               color="text-amber-600" 
@@ -182,7 +184,7 @@ export default function ReportsPage() {
             {/* Revenue & Profit Over Time Chart */}
             <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
-                <Calendar className="text-indigo-600" size={20} /> Revenue & Profit Trend
+                <Calendar className="text-indigo-600" size={20} /> {t("reports.salesTrend")}
               </h3>
               <div className="h-80 w-full">
                 {data.salesByDate.length > 0 ? (
@@ -196,12 +198,12 @@ export default function ReportsPage() {
                         formatter={(value: any) => formatCurrency(Number(value))}
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                      <Line type="monotone" dataKey="profit" name="Net Profit" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="revenue" name={t("reports.totalRevenue")} stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="profit" name={t("reports.netProfit")} stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-400">No data available for this period</div>
+                  <div className="h-full flex items-center justify-center text-slate-400">{t("common.noData")}</div>
                 )}
               </div>
             </div>
@@ -209,7 +211,7 @@ export default function ReportsPage() {
             {/* Sales By Category Pie Chart */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
-                <PieIcon className="text-violet-600" size={20} /> Sales by Category
+                <PieIcon className="text-violet-600" size={20} /> {t("reports.salesByCategory")}
               </h3>
               <div className="h-64 w-full">
                 {data.salesByCategory.length > 0 ? (
@@ -234,7 +236,7 @@ export default function ReportsPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-400">No data available</div>
+                  <div className="h-full flex items-center justify-center text-slate-400">{t("common.noData")}</div>
                 )}
               </div>
             </div>
@@ -242,7 +244,7 @@ export default function ReportsPage() {
             {/* Sales By Cashier */}
             <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
-                <FileText className="text-emerald-600" size={20} /> Performance by Cashier
+                <FileText className="text-emerald-600" size={20} /> {t("reports.salesByCashier")}
               </h3>
               <div className="h-72 w-full">
                 {data.salesByCashier.length > 0 ? (
@@ -255,11 +257,11 @@ export default function ReportsPage() {
                         formatter={(value: any) => formatCurrency(Number(value))}
                         cursor={{ fill: 'transparent' }}
                       />
-                      <Bar dataKey="revenue" name="Revenue" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={32} />
+                      <Bar dataKey="revenue" name={t("reports.totalRevenue")} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={32} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-slate-400">No data available</div>
+                  <div className="h-full flex items-center justify-center text-slate-400">{t("common.noData")}</div>
                 )}
               </div>
             </div>

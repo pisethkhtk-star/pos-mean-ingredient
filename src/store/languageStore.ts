@@ -14,6 +14,7 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
     set({ language: lang });
     if (typeof window !== "undefined") {
       localStorage.setItem("pos_language", lang);
+      document.documentElement.setAttribute("lang", lang);
     }
   },
   toggleLanguage: () => {
@@ -37,7 +38,7 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
 // Auto-initialize saved language on client side
 if (typeof window !== "undefined") {
   const saved = localStorage.getItem("pos_language") as Language | null;
-  if (saved === "km" || saved === "en") {
-    useLanguageStore.setState({ language: saved });
-  }
+  const initial: Language = (saved === "km" || saved === "en") ? saved : "km";
+  useLanguageStore.setState({ language: initial });
+  document.documentElement.setAttribute("lang", initial);
 }

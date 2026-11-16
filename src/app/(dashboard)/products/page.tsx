@@ -6,6 +6,7 @@ import {
   ChevronDown, Package, Loader2, Boxes, UtensilsCrossed,
   ToggleLeft, ToggleRight, Layers
 } from "lucide-react";
+import { useLanguageStore } from "@/store/languageStore";
 
 interface Category { id: number; name: string; icon?: string; }
 interface Ingredient { id: number; name: string; code: string; unit: string; cost: number | string; stock: number | string; minStock: number | string; }
@@ -29,6 +30,7 @@ interface Product {
 const emptyForm = { name: "", code: "", price: "", cost: "", stock: "0", minStock: "5", image: "", categoryId: "" };
 
 export default function ProductsPage() {
+  const { t } = useLanguageStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
@@ -240,12 +242,12 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <ShoppingBag size={24} className="text-indigo-600 dark:text-indigo-400" />
-            Products Catalog & Stock Management
+            {t("products.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{products.length} products configured in catalog</p>
+          <p className="text-sm text-slate-500 mt-0.5">{products.length} {t("products.configuredCount")}</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
-          <Plus size={16} /> Add Product
+          <Plus size={16} /> {t("products.addProduct")}
         </button>
       </div>
 
@@ -253,13 +255,13 @@ export default function ProductsPage() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-52">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search by product name or code..." value={query} onChange={e => setQuery(e.target.value)}
+          <input type="text" placeholder={t("products.searchPlaceholder")} value={query} onChange={e => setQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
         </div>
         <div className="relative">
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
             className="appearance-none pl-3 pr-8 py-2.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-sm focus:outline-none cursor-pointer">
-            <option value="all">All Categories</option>
+            <option value="all">{t("products.allCategories")}</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -272,14 +274,14 @@ export default function ProductsPage() {
           <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-indigo-500" size={28} /></div>
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
-            <Package size={36} className="opacity-40" /><p>No products found</p>
+            <Package size={36} className="opacity-40" /><p>{t("products.noProducts")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                  {["Product", "Code", "Category", "Price ($)", "Cost ($)", "Stock Tracking & Recipe", "Actions"].map(h => (
+                  {[t("products.colProduct"), t("products.colCode"), t("products.colCategory"), t("products.colPrice"), t("products.colCost"), t("products.colStockTracking"), t("products.colActions")].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -301,7 +303,7 @@ export default function ProductsPage() {
                       <td className="px-4 py-3">
                         {p.hasRecipe !== false ? (
                           recipeIngredients.length === 0 ? (
-                            <span className="text-xs text-amber-500 font-medium">Recipe mode (No ingredients added)</span>
+                            <span className="text-xs text-amber-500 font-medium">{t("products.recipeModeNoIng")}</span>
                           ) : (
                             <div className="flex flex-wrap gap-1">
                               {recipeIngredients.map((item, idx) => (
@@ -314,7 +316,7 @@ export default function ProductsPage() {
                           )
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold text-xs border border-emerald-200 dark:border-emerald-900">
-                            Direct Stock: {p.stock} units
+                            {t("products.directStockBadge")}: {p.stock} {t("products.units")}
                           </span>
                         )}
                       </td>
@@ -340,7 +342,7 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
               <h2 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <ShoppingBag size={18} className="text-indigo-600" />
-                {editing ? "Edit Product Details" : "Add Product Details"}
+                {editing ? t("products.editTitle") : t("products.addTitle")}
               </h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X size={18} /></button>
             </div>
@@ -350,28 +352,28 @@ export default function ProductsPage() {
               
               {/* Product Basic Info */}
               <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Basic Details</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">{t("products.basicDetails")}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Product Name <span className="text-rose-500">*</span></label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.name")} <span className="text-rose-500">*</span></label>
                     <input type="text" required placeholder="e.g. Iced Latte, Coca Cola" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                       className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Code / Barcode</label>
-                    <input type="text" placeholder="Auto-generated if blank" maxLength={14} value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))}
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.codeBarcode")}</label>
+                    <input type="text" placeholder={t("products.autoCode")} maxLength={14} value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))}
                       className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Category <span className="text-rose-500">*</span></label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.category")} <span className="text-rose-500">*</span></label>
                     <select value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} required
                       className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
-                      <option value="">Select Category</option>
+                      <option value="">{t("products.selectCategory")}</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Selling Price ($) <span className="text-rose-500">*</span></label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.sellingPrice")} <span className="text-rose-500">*</span></label>
                     <input type="number" step="0.01" min="0" required placeholder="3.50" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
                       className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
                   </div>
@@ -379,8 +381,8 @@ export default function ProductsPage() {
                   {/* Cost Input */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center justify-between">
-                      <span>Product Cost ($)</span>
-                      {hasRecipe && <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Auto Recipe Cost</span>}
+                      <span>{t("products.productCost")}</span>
+                      {hasRecipe && <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">{t("products.autoRecipeCost")}</span>}
                     </label>
                     {hasRecipe ? (
                       <input
@@ -419,7 +421,7 @@ export default function ProductsPage() {
                   {!hasRecipe && (
                     <>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Direct Stock Quantity <span className="text-rose-500">*</span></label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.directStockQty")} <span className="text-rose-500">*</span></label>
                         <input
                           type="number"
                           min="0"
@@ -431,7 +433,7 @@ export default function ProductsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Min Stock Alert Threshold</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.minStockAlert")}</label>
                         <input
                           type="number"
                           min="0"
@@ -450,10 +452,10 @@ export default function ProductsPage() {
                       <UtensilsCrossed size={15} className="text-indigo-600 dark:text-indigo-400" />
                       <div>
                         <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
-                          {hasRecipe ? "Use Raw Ingredients Recipe" : "Direct Product Stock (No Recipe)"}
+                          {hasRecipe ? t("products.useRecipe") : t("products.directStockBadge")}
                         </span>
                         <span className="text-[11px] text-slate-400">
-                          {hasRecipe ? "Stock is derived from raw material ingredients" : "Track stock by direct product quantity"}
+                          {hasRecipe ? t("products.useRecipeDesc") : t("products.directStockDesc")}
                         </span>
                       </div>
                     </div>
@@ -470,7 +472,7 @@ export default function ProductsPage() {
 
                   {/* Product Image Upload Field */}
                   <div className="col-span-2 pt-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Product Image</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t("products.productImage")}</label>
                     <div className="flex items-center gap-4">
                       {imagePreview ? (
                         <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 group">
@@ -490,7 +492,7 @@ export default function ProductsPage() {
                       ) : (
                         <div className="w-20 h-20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-400 shrink-0">
                           <ShoppingBag size={20} className="opacity-40 mb-1" />
-                          <span className="text-[10px] font-medium">No Image</span>
+                          <span className="text-[10px] font-medium">{t("products.noImage")}</span>
                         </div>
                       )}
 
@@ -511,7 +513,7 @@ export default function ProductsPage() {
                           }}
                           className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 dark:file:bg-indigo-950 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer"
                         />
-                        <p className="text-[11px] text-slate-400 mt-1">Upload PNG, JPG, or WEBP image file for POS grid display.</p>
+                        <p className="text-[11px] text-slate-400 mt-1">{t("products.imageTip")}</p>
                       </div>
                     </div>
                   </div>
@@ -524,7 +526,7 @@ export default function ProductsPage() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <UtensilsCrossed size={14} className="text-amber-500" />
-                      Recipe Ingredients Required (Per 1 Unit) <span className="text-rose-500">*</span>
+                      {t("products.recipeRequired")} <span className="text-rose-500">*</span>
                     </h3>
                     <button
                       type="button"
@@ -532,17 +534,17 @@ export default function ProductsPage() {
                       disabled={availableIngredients.length === 0}
                       className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1"
                     >
-                      <Plus size={12} /> Add Ingredient Line
+                      <Plus size={12} /> {t("products.addIngredientLine")}
                     </button>
                   </div>
 
                   {availableIngredients.length === 0 ? (
                     <div className="p-4 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded-xl text-xs">
-                      No ingredients found in stock registry. Please create ingredients in <strong>Ingredients Management</strong> page first.
+                      {t("products.noIngredientsStock")}
                     </div>
                   ) : recipeItems.length === 0 ? (
                     <div className="p-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-center text-xs text-slate-400">
-                      No ingredients added yet. Click "+ Add Ingredient Line" to specify raw materials.
+                      {t("products.noIngredientsAdded")}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -551,7 +553,7 @@ export default function ProductsPage() {
                         return (
                           <div key={idx} className="flex gap-2 items-center bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
                             <div className="flex-1">
-                              <label className="block text-[10px] font-semibold text-slate-400 mb-0.5">Ingredient</label>
+                              <label className="block text-[10px] font-semibold text-slate-400 mb-0.5">{t("products.ingredient")}</label>
                               <select
                                 value={item.ingredientId}
                                 onChange={e => updateRecipeRow(idx, "ingredientId", parseInt(e.target.value))}
@@ -567,7 +569,7 @@ export default function ProductsPage() {
                             </div>
                             <div className="w-36">
                               <label className="block text-[10px] font-semibold text-slate-400 mb-0.5">
-                                Quantity ({matchedIng?.unit || "unit"})
+                                {t("products.quantity")} ({matchedIng?.unit || "unit"})
                               </label>
                               <input
                                 type="number"
@@ -598,9 +600,9 @@ export default function ProductsPage() {
 
               {/* Submit Buttons */}
               <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">{t("common.cancel")}</button>
                 <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors">
-                  {saving && <Loader2 size={14} className="animate-spin" />} {editing ? "Save Product Details" : "Create Product"}
+                  {saving && <Loader2 size={14} className="animate-spin" />} {editing ? t("products.saveChanges") : t("products.createBtn")}
                 </button>
               </div>
             </form>
