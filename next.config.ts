@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+const rawBackendUrl =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000";
+
+const backendUrl = rawBackendUrl.replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
   // @ts-ignore
   allowedDevOrigins: ["*"],
@@ -7,14 +14,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:5000/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: "http://localhost:5000/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
       },
     ];
   },
 };
 
 export default nextConfig;
+

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useCartStore } from "@/store/cartStore";
+import { useLanguageStore } from "@/store/languageStore";
 import { X, CreditCard, Banknote, QrCode, ArrowRightLeft, Loader2, StickyNote } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -11,6 +12,7 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModalProps) {
+  const { t } = useLanguageStore();
   const { cartItems, selectedCustomer, selectedDiscount, taxRate, getTotals, clearCart } = useCartStore();
   const { subtotal, discountValue, taxValue, total } = getTotals();
 
@@ -120,7 +122,7 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg flex flex-col max-h-[95vh] shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100">POS Payment Checkout</h3>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100">{t("payment.title")}</h3>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
@@ -139,7 +141,7 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
 
           {/* Amount Due Summary */}
           <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl flex justify-between items-center">
-            <span className="text-sm font-medium text-slate-500">Amount Due:</span>
+            <span className="text-sm font-medium text-slate-500">{t("payment.amountDue")}:</span>
             <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
               ${total.toFixed(2)}
             </span>
@@ -148,13 +150,13 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
           {/* Payment Methods */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Select Payment Method
+              {t("payment.method")}
             </label>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { id: "CASH", label: "Cash", icon: Banknote },
-                { id: "CARD", label: "Card Payment", icon: CreditCard },
-                { id: "QR_CODE", label: "QR Scan", icon: QrCode },
+                { id: "CASH", label: t("payment.cash"), icon: Banknote },
+                { id: "QR_CODE", label: t("payment.khqr"), icon: QrCode },
+                { id: "CARD", label: "Card", icon: CreditCard },
                 { id: "BANK_TRANSFER", label: "Bank Transfer", icon: ArrowRightLeft },
               ].map((method) => {
                 const Icon = method.icon;
@@ -184,7 +186,7 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
                 {/* Amount Paid Input */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    Cash Received ($)
+                    {t("payment.amountReceived")} ($)
                   </label>
                   <input
                     ref={amountInputRef}
@@ -200,7 +202,7 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
                 {/* Change Due Display */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    Change Due ($)
+                    {t("payment.change")} ($)
                   </label>
                   <div className="px-4 py-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-emerald-600 dark:text-emerald-400 font-extrabold text-lg rounded-xl h-[52px] flex items-center">
                     ${change.toFixed(2)}
@@ -211,14 +213,14 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
               {/* Quick Cash Buttons */}
               <div className="space-y-2">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Quick Cash Actions
+                  {t("payment.exact")}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleSetExactCash}
                     className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold cursor-pointer"
                   >
-                    Exact Cash
+                    {t("payment.exact")}
                   </button>
                   {[1, 5, 10, 20, 50, 100].map((val) => (
                     <button
@@ -283,7 +285,7 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
             disabled={loading}
             className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm transition-colors disabled:opacity-50 cursor-pointer"
           >
-            Cancel
+            {t("payment.cancel")}
           </button>
           <button
             onClick={handleCheckout}
@@ -291,9 +293,12 @@ export default function PaymentModal({ onClose, onPaymentSuccess }: PaymentModal
             className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
-              <Loader2 className="animate-spin" size={16} />
+              <div className="flex items-center gap-2">
+                <Loader2 className="animate-spin" size={16} />
+                <span>{t("payment.processing")}</span>
+              </div>
             ) : (
-              "Submit Transaction"
+              t("payment.confirm")
             )}
           </button>
         </div>

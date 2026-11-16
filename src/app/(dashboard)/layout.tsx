@@ -2,7 +2,7 @@
 
 import Sidebar from "@/components/shared/Sidebar";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -13,12 +13,21 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
+    } else if (!loading && user && user.permissions && user.permissions.length > 0) {
+      // Check if user has permission to visit current route
+      if (pathname && !user.permissions.includes(pathname)) {
+        const fallback = user.permissions.includes("/pos")
+          ? "/pos"
+          : user.permissions[0] || "/login";
+        router.replace(fallback);
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return (

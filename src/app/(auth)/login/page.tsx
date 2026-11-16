@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { useLanguageStore } from "@/store/languageStore";
 import { useRouter } from "next/navigation";
 import { Loader2, KeyRound, Mail, ShieldAlert } from "lucide-react";
+import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login, user, loading, error } = useAuthStore();
+  const { t } = useLanguageStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -45,12 +48,16 @@ export default function LoginPage() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl" />
 
       <div className="max-w-md w-full space-y-8 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 p-8 rounded-2xl shadow-2xl relative z-10">
+        <div className="flex justify-end">
+          <LanguageSwitcher className="w-36" />
+        </div>
+
         <div>
           <h2 className="mt-2 text-center text-3xl font-extrabold tracking-tight text-white">
-            Sign In
+            {t("login.title")}
           </h2>
           <p className="mt-2 text-center text-sm text-slate-400">
-            Access the Point of Sale Terminal
+            {t("login.subtitle")}
           </p>
         </div>
 
@@ -58,7 +65,7 @@ export default function LoginPage() {
           {error && (
             <div className="flex items-center gap-3 p-4 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-sm">
               <ShieldAlert className="shrink-0 text-rose-400" size={18} />
-              <span>{error}</span>
+              <span>{t("login.failed")}</span>
             </div>
           )}
 
@@ -66,7 +73,7 @@ export default function LoginPage() {
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Email Address
+                {t("login.email")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -88,7 +95,7 @@ export default function LoginPage() {
             {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Password
+                {t("login.password")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -115,9 +122,12 @@ export default function LoginPage() {
               className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
-                <Loader2 className="animate-spin" size={18} />
+                <div className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={18} />
+                  <span>{t("login.loggingIn")}</span>
+                </div>
               ) : (
-                "Sign In"
+                t("login.submit")
               )}
             </button>
           </div>

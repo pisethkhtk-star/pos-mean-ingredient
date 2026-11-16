@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLanguageStore } from "@/store/languageStore";
 import { X, Printer } from "lucide-react";
 
 interface ReceiptProps {
@@ -10,6 +11,7 @@ interface ReceiptProps {
 }
 
 export default function Receipt({ order, settings, onClose }: ReceiptProps) {
+  const { t } = useLanguageStore();
   if (!order) return null;
 
   const handlePrint = () => {
@@ -31,7 +33,7 @@ export default function Receipt({ order, settings, onClose }: ReceiptProps) {
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
           <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Printer size={18} />
-            Simulate Receipt
+            {t("receipt.simulate")}
           </h3>
           <button
             onClick={onClose}
@@ -57,14 +59,14 @@ export default function Receipt({ order, settings, onClose }: ReceiptProps) {
 
             {/* Order Meta Info */}
             <div className="space-y-0.5 mb-3 text-[10px] text-slate-600">
-              <p>ORDER: {order.orderNumber}</p>
-              <p>DATE: {new Date(order.createdAt).toLocaleString()}</p>
-              <p>CASHIER: {order.user?.name || "Cashier"}</p>
+              <p>{t("receipt.orderNumber")}: {order.orderNumber}</p>
+              <p>{t("receipt.date")}: {new Date(order.createdAt).toLocaleString()}</p>
+              <p>{t("receipt.cashier")}: {order.user?.name || "Cashier"}</p>
               {order.customer && (
                 <div className="border-t border-dashed border-slate-200 mt-1 pt-1">
-                  <p>CUST: {order.customer.name}</p>
+                  <p>{t("receipt.customer")}: {order.customer.name}</p>
                   <p>PHONE: {order.customer.phone || "N/A"}</p>
-                  <p>POINTS ACCUM: {order.customer.points} pts</p>
+                  <p>POINTS: {order.customer.points} pts</p>
                 </div>
               )}
             </div>
@@ -72,9 +74,9 @@ export default function Receipt({ order, settings, onClose }: ReceiptProps) {
             {/* Product items table */}
             <div className="border-t border-b border-dashed border-slate-300 py-2 mb-3">
               <div className="grid grid-cols-12 font-bold mb-1 border-b border-slate-200 pb-1 text-[10px]">
-                <span className="col-span-6">ITEM</span>
-                <span className="col-span-2 text-center">QTY</span>
-                <span className="col-span-4 text-right">TOTAL</span>
+                <span className="col-span-6">{t("receipt.item")}</span>
+                <span className="col-span-2 text-center">{t("receipt.qty")}</span>
+                <span className="col-span-4 text-right">{t("receipt.total")}</span>
               </div>
               <div className="space-y-1.5">
                 {order.items?.map((item: any) => (
@@ -93,35 +95,35 @@ export default function Receipt({ order, settings, onClose }: ReceiptProps) {
             {/* Receipt Summary */}
             <div className="space-y-1 text-[10px] border-b border-dashed border-slate-300 pb-3 mb-3">
               <div className="flex justify-between">
-                <span>SUBTOTAL:</span>
+                <span>{t("receipt.subtotal")}:</span>
                 <span>${Number(order.subtotal).toFixed(2)}</span>
               </div>
               {Number(order.discount) > 0 && (
                 <div className="flex justify-between text-rose-600">
-                  <span>DISCOUNT:</span>
+                  <span>{t("receipt.discount")}:</span>
                   <span>-${Number(order.discount).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span>TAX ({Number(order.tax) === 0 ? 0 : (settings?.taxRate || 10)}%):</span>
+                <span>{t("receipt.tax")} ({Number(order.tax) === 0 ? 0 : (settings?.taxRate || 10)}%):</span>
                 <span>${Number(order.tax).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs font-bold pt-1 border-t border-slate-200">
-                <span>TOTAL:</span>
+                <span>{t("receipt.grandTotal")}:</span>
                 <span>${Number(order.total).toFixed(2)}</span>
               </div>
             </div>
 
             {/* Payment Details */}
             <div className="space-y-0.5 text-[9px] text-slate-600 mb-4">
-              <p>PAY METHOD: {order.paymentMethod}</p>
-              <p>AMOUNT PAID: ${Number(order.amountPaid).toFixed(2)}</p>
-              <p>CASH CHANGE: ${Number(order.change).toFixed(2)}</p>
+              <p>{t("receipt.paymentMethod")}: {order.paymentMethod}</p>
+              <p>{t("receipt.amountPaid")}: ${Number(order.amountPaid).toFixed(2)}</p>
+              <p>{t("receipt.change")}: ${Number(order.change).toFixed(2)}</p>
             </div>
 
             {/* Footer */}
             <div className="text-center text-[10px] text-slate-500 pt-2 border-t border-dashed border-slate-200">
-              <p>{settings?.receiptHeader || "Thank you for shopping!"}</p>
+              <p>{settings?.receiptHeader || t("receipt.thankYou")}</p>
               <p className="font-semibold text-[8px] mt-1">{settings?.receiptFooter || "Please come again"}</p>
             </div>
           </div>
@@ -133,14 +135,14 @@ export default function Receipt({ order, settings, onClose }: ReceiptProps) {
             onClick={onClose}
             className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm transition-colors cursor-pointer"
           >
-            Close
+            {t("common.close")}
           </button>
           <button
             onClick={handlePrint}
             className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Printer size={16} />
-            Print (PDF)
+            {t("receipt.print")}
           </button>
         </div>
       </div>

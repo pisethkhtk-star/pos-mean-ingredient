@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { useLanguageStore } from "@/store/languageStore";
 import {
   Shield,
   LayoutDashboard,
   Calculator,
   ShoppingBag,
+  Boxes,
   Tags,
   Ticket,
   Warehouse,
@@ -27,20 +29,21 @@ import {
 
 // List of all pages with metadata for nice rendering
 const AVAILABLE_PAGES = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard, description: "Main overview, statistics, and sales charts" },
-  { name: "POS Terminal", href: "/pos", icon: Calculator, description: "Point of Sale interface for transaction checkouts" },
-  { name: "Products", href: "/products", icon: ShoppingBag, description: "Manage product listings, pricing, and stock" },
-  { name: "Categories", href: "/categories", icon: Tags, description: "Organize items into distinct product groups" },
-  { name: "Discounts", href: "/discounts", icon: Ticket, description: "Create discount codes and promotional campaigns" },
-  { name: "Inventory", href: "/inventory", icon: Warehouse, description: "Track stock quantities and inventory movements" },
-  { name: "Purchases", href: "/purchases", icon: PackageCheck, description: "Record stock purchases and intake logs" },
-  { name: "Suppliers", href: "/suppliers", icon: Truck, description: "Manage supplier directory and contact details" },
-  { name: "Customers", href: "/customers", icon: Users, description: "View client records and customer loyalty points" },
-  { name: "Orders", href: "/orders", icon: ClipboardList, description: "View transaction histories and print invoices" },
-  { name: "Reports", href: "/reports", icon: BarChart3, description: "Generate sales dashboards and reports" },
-  { name: "Users", href: "/users", icon: UserCog, description: "Manage user accounts, roles, and credentials" },
-  { name: "Role Permissions", href: "/roles", icon: Shield, description: "Configure page access permissions for each role" },
-  { name: "Settings", href: "/settings", icon: SettingsIcon, description: "System variables and configurations" },
+  { name: "Dashboard", translationKey: "nav.dashboard", href: "/", icon: LayoutDashboard, description: "Main overview, statistics, and sales charts" },
+  { name: "POS Terminal", translationKey: "nav.pos", href: "/pos", icon: Calculator, description: "Point of Sale interface for transaction checkouts" },
+  { name: "Products", translationKey: "nav.products", href: "/products", icon: ShoppingBag, description: "Manage product listings, pricing, and stock" },
+  { name: "Ingredients", translationKey: "nav.ingredients", href: "/ingredients", icon: Boxes, description: "Manage raw ingredients and stock units" },
+  { name: "Categories", translationKey: "nav.categories", href: "/categories", icon: Tags, description: "Organize items into distinct product groups" },
+  { name: "Discounts", translationKey: "nav.discounts", href: "/discounts", icon: Ticket, description: "Create discount codes and promotional campaigns" },
+  { name: "Inventory", translationKey: "nav.inventory", href: "/inventory", icon: Warehouse, description: "Track stock quantities and inventory movements" },
+  { name: "Purchases", translationKey: "nav.purchases", href: "/purchases", icon: PackageCheck, description: "Record stock purchases and intake logs" },
+  { name: "Suppliers", translationKey: "nav.suppliers", href: "/suppliers", icon: Truck, description: "Manage supplier directory and contact details" },
+  { name: "Customers", translationKey: "nav.customers", href: "/customers", icon: Users, description: "View client records and customer loyalty points" },
+  { name: "Orders", translationKey: "nav.orders", href: "/orders", icon: ClipboardList, description: "View transaction histories and print invoices" },
+  { name: "Reports", translationKey: "nav.reports", href: "/reports", icon: BarChart3, description: "Generate sales dashboards and reports" },
+  { name: "Users", translationKey: "nav.users", href: "/users", icon: UserCog, description: "Manage user accounts, roles, and credentials" },
+  { name: "Role Permissions", translationKey: "nav.roles", href: "/roles", icon: Shield, description: "Configure page access permissions for each role" },
+  { name: "Settings", translationKey: "nav.settings", href: "/settings", icon: SettingsIcon, description: "System variables and configurations" },
 ];
 
 const ROLES = ["ADMIN", "MANAGER", "CASHIER"] as const;
@@ -48,6 +51,7 @@ type RoleType = typeof ROLES[number];
 
 export default function RolePermissionsPage() {
   const { user, checkSession } = useAuthStore();
+  const { t } = useLanguageStore();
   const router = useRouter();
 
   const [permissions, setPermissions] = useState<Record<RoleType, string[]>>({
@@ -174,10 +178,10 @@ export default function RolePermissionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
             <Shield size={26} className="text-indigo-600 dark:text-indigo-400 animate-pulse" />
-            Role & Permissions Manager
+            {t("roles.title")}
           </h1>
           <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">
-            Dynamically tick checkboxes to specify which navigation pages each user role is permitted to use.
+            {t("roles.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -194,7 +198,7 @@ export default function RolePermissionsPage() {
             className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-100 dark:shadow-none hover:shadow-indigo-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {saving ? "Saving Changes..." : "Save Permissions"}
+            {saving ? "Saving Changes..." : t("roles.savePermissions")}
           </button>
         </div>
       </div>
@@ -270,7 +274,7 @@ export default function RolePermissionsPage() {
                             <PageIcon size={18} />
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-850 dark:text-slate-200">{page.name}</div>
+                            <div className="font-semibold text-slate-850 dark:text-slate-200">{t(page.translationKey)}</div>
                             <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{page.description}</div>
                             <div className="text-[10px] font-mono text-slate-400 dark:text-slate-600 mt-1">{page.href}</div>
                           </div>

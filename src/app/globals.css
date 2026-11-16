@@ -2,7 +2,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-sans: var(--font-khmer), "Kantumruy Pro", "Siemreap", "Battambang", "Khmer UI", var(--font-sans), system-ui, sans-serif;
   --font-mono: var(--font-mono), monospace;
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;

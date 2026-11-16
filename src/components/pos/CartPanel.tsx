@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useCartStore } from "@/store/cartStore";
+import { useLanguageStore } from "@/store/languageStore";
 import { Trash2, Plus, Minus, UserPlus, ReceiptCent, User, Trash, ArrowRight } from "lucide-react";
 
 interface CartPanelProps {
@@ -9,6 +10,7 @@ interface CartPanelProps {
 }
 
 export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
+  const { t } = useLanguageStore();
   const {
     cartItems,
     selectedCustomer,
@@ -129,14 +131,14 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
       <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-2">
         <div className="flex justify-between items-center">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Customer details
+            {t("pos.selectCustomer")}
           </label>
           <button
             onClick={() => setIsAddingCust(!isAddingCust)}
             className="text-xs text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5 hover:underline cursor-pointer"
           >
             <UserPlus size={14} />
-            {isAddingCust ? "Select List" : "Quick Add"}
+            {isAddingCust ? t("common.all") : t("common.add")}
           </button>
         </div>
 
@@ -145,7 +147,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
           <form onSubmit={handleQuickAddCustomer} className="space-y-2 pt-1">
             <input
               type="text"
-              placeholder="Customer Name (Required)"
+              placeholder={`${t("pos.customerName")} *`}
               required
               value={newCustName}
               onChange={(e) => setNewCustName(e.target.value)}
@@ -154,7 +156,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Phone (Optional)"
+                placeholder={t("pos.customerPhone")}
                 value={newCustPhone}
                 onChange={(e) => setNewCustPhone(e.target.value)}
                 className="block flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -163,7 +165,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
                 type="submit"
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
               >
-                Save
+                {t("common.save")}
               </button>
             </div>
           </form>
@@ -238,7 +240,8 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
         {cartItems.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
             <Trash2 size={36} className="opacity-40" />
-            <p className="text-sm font-medium">Cart is empty</p>
+            <p className="text-sm font-medium">{t("pos.emptyCart")}</p>
+            <p className="text-xs text-slate-400 text-center max-w-[200px]">{t("pos.emptyCartSub")}</p>
           </div>
         ) : (
           cartItems.map((item) => (
@@ -308,14 +311,14 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
             <div className="flex justify-between items-center text-xs text-slate-500">
               <span className="font-semibold flex items-center gap-1">
                 <ReceiptCent size={14} className="text-slate-400" />
-                Select Discount
+                {t("pos.selectDiscount")}
               </span>
               {selectedDiscount && (
                 <button
                   onClick={() => selectDiscount(null)}
                   className="text-[10px] text-rose-500 hover:underline cursor-pointer"
                 >
-                  Remove
+                  {t("common.delete")}
                 </button>
               )}
             </div>
@@ -329,7 +332,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
               }}
               className="block w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-xs focus:outline-none"
             >
-              <option value="">Apply Promo / Discount...</option>
+              <option value="">{t("pos.noDiscount")}</option>
               {discounts
                 .filter((d) => d.isActive && subtotal >= Number(d.minPurchase))
                 .map((d) => (
@@ -346,13 +349,13 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
         {/* Calculation summary */}
         <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
           <div className="flex justify-between">
-            <span>Subtotal:</span>
+            <span>{t("pos.subtotal")}:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">${subtotal.toFixed(2)}</span>
           </div>
 
           {selectedDiscount && (
             <div className="flex justify-between text-rose-600 dark:text-rose-400">
-              <span>Promo Discount:</span>
+              <span>{t("pos.discount")}:</span>
               <span className="font-semibold">-${discountValue.toFixed(2)}</span>
             </div>
           )}
@@ -367,7 +370,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
                 className="h-4 w-4 rounded border-slate-350 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               />
               <label htmlFor="pos-tax-toggle" className="text-slate-600 dark:text-slate-400 select-none cursor-pointer font-medium">
-                Tax
+                {t("pos.tax")}
               </label>
               {taxEnabled && (
                 <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950">
@@ -388,7 +391,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
           </div>
 
           <div className="flex justify-between text-sm font-extrabold text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
-            <span>Payable Total:</span>
+            <span>{t("pos.total")}:</span>
             <span className="font-mono text-base text-indigo-600 dark:text-indigo-400">
               ${total.toFixed(2)}
             </span>
@@ -401,7 +404,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
             onClick={clearCart}
             disabled={cartItems.length === 0}
             className="px-3 py-3 border border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800 text-slate-500 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            title="Clear Checkout"
+            title={t("pos.clearCart")}
           >
             <Trash2 size={16} />
           </button>
@@ -410,7 +413,7 @@ export default function CartPanel({ onCheckoutClick }: CartPanelProps) {
             disabled={cartItems.length === 0}
             className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            Checkout Payment
+            {t("pos.checkout")}
             <ArrowRight size={16} />
           </button>
         </div>
