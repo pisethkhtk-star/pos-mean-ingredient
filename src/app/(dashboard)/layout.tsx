@@ -36,7 +36,7 @@ export default function DashboardLayout({
       <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center space-y-4">
           <Loader2 className="animate-spin text-indigo-600 mx-auto" size={48} />
-          <p className="text-sm font-medium text-slate-500">{t("common.loading")}</p>
+          <p className="text-sm font-medium text-slate-500" suppressHydrationWarning>{t("common.loading")}</p>
         </div>
       </div>
     );

@@ -6,6 +6,7 @@ interface LanguageState {
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
   t: (key: string) => string;
+  initLanguage: () => void;
 }
 
 export const useLanguageStore = create<LanguageState>((set, get) => ({
@@ -33,12 +34,13 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
     }
     return key;
   },
+  initLanguage: () => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pos_language") as Language | null;
+      if (saved === "km" || saved === "en") {
+        set({ language: saved });
+        document.documentElement.setAttribute("lang", saved);
+      }
+    }
+  },
 }));
-
-// Auto-initialize saved language on client side
-if (typeof window !== "undefined") {
-  const saved = localStorage.getItem("pos_language") as Language | null;
-  const initial: Language = (saved === "km" || saved === "en") ? saved : "km";
-  useLanguageStore.setState({ language: initial });
-  document.documentElement.setAttribute("lang", initial);
-}
