@@ -22,8 +22,12 @@ import { useAuthStore } from "@/store/authStore";
 
 interface MeasurementUnit {
   id: number;
+  unitType?: "WEIGHT" | "VOLUME" | "COUNT";
   name: string;
+  nameKm?: string;
   symbol: string;
+  isBase?: boolean;
+  factorToBase?: number;
   description?: string;
 }
 
@@ -93,11 +97,20 @@ export default function IngredientsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   // Units Management
+  const initialUnitForm = {
+    unitType: "WEIGHT" as "WEIGHT" | "VOLUME" | "COUNT",
+    name: "",
+    nameKm: "",
+    symbol: "",
+    isBase: false,
+    factorToBase: "1",
+    description: "",
+  };
   const [unitsList, setUnitsList] = useState<MeasurementUnit[]>([]);
   const [loadingUnits, setLoadingUnits] = useState(false);
   const [showUnitsModal, setShowUnitsModal] = useState(false);
   const [showQuickUnitModal, setShowQuickUnitModal] = useState(false);
-  const [unitForm, setUnitForm] = useState({ name: "", symbol: "", description: "" });
+  const [unitForm, setUnitForm] = useState(initialUnitForm);
   const [savingUnit, setSavingUnit] = useState(false);
   const [editingUnit, setEditingUnit] = useState<MeasurementUnit | null>(null);
   const [unitError, setUnitError] = useState("");
@@ -118,22 +131,14 @@ export default function IngredientsPage() {
     } finally {
       setLoadingUnits(false);
     }
-    // Fallback default units if API empty or initial
+    // Fallback standard units
     setUnitsList([
-      { id: 1, name: "Kilogram", symbol: "kg" },
-      { id: 2, name: "Gram", symbol: "g" },
-      { id: 3, name: "Liter", symbol: "liter" },
-      { id: 4, name: "Milliliter", symbol: "ml" },
-      { id: 5, name: "Can", symbol: "can" },
-      { id: 6, name: "Bottle", symbol: "bottle" },
-      { id: 7, name: "Pieces", symbol: "pcs" },
-      { id: 8, name: "Pack", symbol: "pack" },
-      { id: 9, name: "Bag", symbol: "bag" },
-      { id: 10, name: "Box", symbol: "box" },
-      { id: 11, name: "Cup", symbol: "cup" },
-      { id: 12, name: "Ounce", symbol: "oz" },
-      { id: 13, name: "Tablespoon", symbol: "tbsp" },
-      { id: 14, name: "Teaspoon", symbol: "tsp" },
+      { id: 1, unitType: "WEIGHT", name: "Gram", nameKm: "ក្រាម", symbol: "g", isBase: true, factorToBase: 1 },
+      { id: 2, unitType: "WEIGHT", name: "Kilogram", nameKm: "គីឡូក្រាម", symbol: "kg", isBase: false, factorToBase: 1000 },
+      { id: 3, unitType: "VOLUME", name: "Milliliter", nameKm: "មីលីលីត្រ", symbol: "ml", isBase: true, factorToBase: 1 },
+      { id: 4, unitType: "VOLUME", name: "Liter", nameKm: "លីត្រ", symbol: "L", isBase: false, factorToBase: 1000 },
+      { id: 5, unitType: "COUNT", name: "Piece", nameKm: "ដុំ / ផ្លែ", symbol: "pcs", isBase: true, factorToBase: 1 },
+      { id: 6, unitType: "COUNT", name: "Dozen", nameKm: "ដប់ពីរ", symbol: "dz", isBase: false, factorToBase: 12 },
     ]);
   }, []);
 
@@ -152,10 +157,14 @@ export default function IngredientsPage() {
     try {
       const url = editingUnit ? `/api/units/${editingUnit.id}` : "/api/units";
       const method = editingUnit ? "PUT" : "POST";
+      const payload = {
+        ...unitForm,
+        factorToBase: parseFloat(unitForm.factorToBase) || 1,
+      };
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(unitForm),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -163,13 +172,21 @@ export default function IngredientsPage() {
         return;
       }
       if (showQuickUnitModal) {
-        const newSym = data.symbol || unitForm.symbol.trim().toLowerCase();
+        const newSym = data.symbol || unitForm.symbol.trim();
         setForm((prev) => ({ ...prev, unit: newSym }));
         setShowQuickUnitModal(false);
       } else {
         setEditingUnit(null);
       }
-      setUnitForm({ name: "", symbol: "", description: "" });
+      setUnitForm({
+        unitType: "WEIGHT",
+        name: "",
+        nameKm: "",
+        symbol: "",
+        isBase: false,
+        factorToBase: "1",
+        description: "",
+      });
       fetchUnits();
     } catch (err: any) {
       setUnitError(err.message || "Failed to save unit");
@@ -372,7 +389,7 @@ export default function IngredientsPage() {
             onClick={() => {
               setUnitError("");
               setEditingUnit(null);
-              setUnitForm({ name: "", symbol: "", description: "" });
+              setUnitForm(initialUnitForm);
               setShowUnitsModal(true);
             }}
             className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
@@ -615,7 +632,7 @@ export default function IngredientsPage() {
                         onClick={() => {
                           setUnitError("");
                           setEditingUnit(null);
-                          setUnitForm({ name: "", symbol: "", description: "" });
+                          setUnitForm(initialUnitForm);
                           setShowQuickUnitModal(true);
                         }}
                         className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
@@ -934,7 +951,15 @@ export default function IngredientsPage() {
                       type="button"
                       onClick={() => {
                         setEditingUnit(null);
-                        setUnitForm({ name: "", symbol: "", description: "" });
+                        setUnitForm({
+                          unitType: "WEIGHT",
+                          name: "",
+                          nameKm: "",
+                          symbol: "",
+                          isBase: false,
+                          factorToBase: "1",
+                          description: "",
+                        });
                       }}
                       className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
                     >
@@ -949,15 +974,29 @@ export default function IngredientsPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                      {t("units.name")} <span className="text-rose-500">*</span>
+                      Unit Type <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={unitForm.unitType}
+                      onChange={(e) => setUnitForm({ ...unitForm, unitType: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                    >
+                      <option value="WEIGHT">WEIGHT (ទម្ងន់: g, kg...)</option>
+                      <option value="VOLUME">VOLUME (ចំណុះ: ml, L...)</option>
+                      <option value="COUNT">COUNT (រាប់: pcs, dz, box...)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      {t("units.name")} (En) <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder={t("units.placeholderName")}
+                      placeholder="e.g. Kilogram"
                       value={unitForm.name}
                       onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
@@ -965,30 +1004,65 @@ export default function IngredientsPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      {t("units.name")} (Kh)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ឧ. គីឡូក្រាម"
+                      value={unitForm.nameKm}
+                      onChange={(e) => setUnitForm({ ...unitForm, nameKm: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
                       {t("units.symbol")} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder={t("units.placeholderSymbol")}
+                      placeholder="e.g. kg, L, pcs"
                       value={unitForm.symbol}
                       onChange={(e) => setUnitForm({ ...unitForm, symbol: e.target.value })}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white font-mono"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                    {t("units.description")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("units.placeholderDesc")}
-                    value={unitForm.description}
-                    onChange={(e) => setUnitForm({ ...unitForm, description: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
-                  />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      Factor to Base Unit
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.000001"
+                      placeholder="1000 for kg, 1 for g"
+                      value={unitForm.factorToBase}
+                      onChange={(e) => setUnitForm({ ...unitForm, factorToBase: e.target.value })}
+                      disabled={unitForm.isBase}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white disabled:opacity-50"
+                    />
+                  </div>
+                  <div className="flex items-center pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={unitForm.isBase}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setUnitForm({
+                            ...unitForm,
+                            isBase: checked,
+                            factorToBase: checked ? "1" : unitForm.factorToBase,
+                          });
+                        }}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                      />
+                      <span>Is Base Unit (ខ្នាតគោល)</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-1">
@@ -1013,23 +1087,43 @@ export default function IngredientsPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase sticky top-0 border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-3 py-2.5">{t("units.symbol")}</th>
-                    <th className="px-3 py-2.5">{t("units.name")}</th>
-                    <th className="px-3 py-2.5">{t("units.description")}</th>
+                    <th className="px-3 py-2.5">Type</th>
+                    <th className="px-3 py-2.5">Name / ឈ្មោះ</th>
+                    <th className="px-3 py-2.5">Symbol</th>
+                    <th className="px-3 py-2.5 text-center">Base Unit</th>
+                    <th className="px-3 py-2.5 text-right">Factor to Base</th>
                     {isAdmin && <th className="px-3 py-2.5 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {unitsList.map((u) => (
                     <tr key={u.id || u.symbol} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-3 py-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          u.unitType === "WEIGHT"
+                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300"
+                            : u.unitType === "VOLUME"
+                            ? "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300"
+                            : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                        }`}>
+                          {u.unitType || "COUNT"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
+                        {u.name} {u.nameKm && <span className="text-slate-400 font-normal">({u.nameKm})</span>}
+                      </td>
                       <td className="px-3 py-2 font-mono font-bold text-indigo-600 dark:text-indigo-400">
                         {u.symbol}
                       </td>
-                      <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
-                        {u.name}
+                      <td className="px-3 py-2 text-center">
+                        {u.isBase ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">✅ Base</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
-                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
-                        {u.description || "—"}
+                      <td className="px-3 py-2 text-right font-mono text-slate-700 dark:text-slate-300">
+                        {u.factorToBase || 1}
                       </td>
                       {isAdmin && (
                         <td className="px-3 py-2 text-right">
@@ -1039,8 +1133,12 @@ export default function IngredientsPage() {
                               onClick={() => {
                                 setEditingUnit(u);
                                 setUnitForm({
+                                  unitType: u.unitType || "WEIGHT",
                                   name: u.name,
+                                  nameKm: u.nameKm || "",
                                   symbol: u.symbol,
+                                  isBase: Boolean(u.isBase),
+                                  factorToBase: String(u.factorToBase || 1),
                                   description: u.description || "",
                                 });
                                 setUnitError("");
@@ -1050,14 +1148,16 @@ export default function IngredientsPage() {
                             >
                               <Pencil size={13} />
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteUnit(u.id)}
-                              title="Delete"
-                              className="p-1 rounded text-rose-500 hover:text-rose-700 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {!u.isBase && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteUnit(u.id)}
+                                title="Delete"
+                                className="p-1 rounded text-rose-500 hover:text-rose-700 cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}

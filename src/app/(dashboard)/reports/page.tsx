@@ -850,7 +850,7 @@ export default function ReportsPage() {
                   ≈ {formatKhr(totalCostKhr)}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  ថ្លៃដើមរូបមន្ត & ទំនិញ
+                  {t("reports.costprice")}
                 </p>
               </div>
             </div>
@@ -871,7 +871,7 @@ export default function ReportsPage() {
                   ≈ {formatKhr(avgOrderKhr)}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  មធ្យមភាគក្នុងមួយវិក្កយបត្រ
+                  {t("reports.average_invoice")}
                 </p>
               </div>
             </div>
