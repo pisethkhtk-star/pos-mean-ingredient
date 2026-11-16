@@ -357,9 +357,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "purchases.colCreatedBy": "បង្កើតដោយ",
     "purchases.colDate": "កាលបរិច្ឆេទ",
     "purchases.selectSupplier": "ជ្រើសរើសអ្នកផ្គត់ផ្គង់",
-    "purchases.addItemRow": "បន្ថែមជួរគ្រឿងផ្សំ",
+    "purchases.addItemRow": "បន្ថែមជួរមុខទំនិញ",
     "purchases.createPurchaseOrder": "បង្កើតការបញ្ជាទិញចូលស្តុក",
     "purchases.note": "កំណត់សម្គាល់",
+    "purchases.itemType": "ប្រភេទ",
+    "purchases.typeIngredient": "គ្រឿងផ្សំ (Ingredient)",
+    "purchases.typeProduct": "ទំនិញ (គ្មានរូបមន្ត)",
+    "purchases.selectIngredient": "ជ្រើសរើសគ្រឿងផ្សំ...",
+    "purchases.selectProduct": "ជ្រើសរើសទំនិញលក់រាយ...",
+    "purchases.itemHeader": "មុខទំនិញ / គ្រឿងផ្សំ",
 
     // Suppliers
     "suppliers.title": "អ្នកផ្គត់ផ្គង់",
@@ -846,6 +852,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "purchases.addItemRow": "Add Item Row",
     "purchases.createPurchaseOrder": "Create Purchase Order",
     "purchases.note": "Note",
+    "purchases.itemType": "Type",
+    "purchases.typeIngredient": "Ingredient",
+    "purchases.typeProduct": "Product (No Recipe)",
+    "purchases.selectIngredient": "Select ingredient...",
+    "purchases.selectProduct": "Select product (retail)...",
+    "purchases.itemHeader": "Item / Ingredient",
 
     // Suppliers
     "suppliers.title": "Suppliers",

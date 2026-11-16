@@ -8,7 +8,24 @@ import { useLanguageStore } from "@/store/languageStore";
 
 interface Supplier { id: number; name: string; }
 interface Ingredient { id: number; name: string; code: string; unit: string; cost: number | string; stock: number | string; }
-interface PurchaseItem { id: number; ingredient: Ingredient; quantity: number | string; cost: number | string; subtotal: number | string; }
+interface Product {
+  id: number;
+  name: string;
+  code: string;
+  cost: number | string;
+  stock: number | string;
+  hasRecipe?: boolean;
+}
+interface PurchaseItem {
+  id: number;
+  ingredientId?: number;
+  ingredient?: Ingredient;
+  productId?: number;
+  product?: Product;
+  quantity: number | string;
+  cost: number | string;
+  subtotal: number | string;
+}
 interface Purchase {
   id: number; reference: string; totalAmount: number | string; note: string;
   createdAt: string; supplier: Supplier; user: { name: string };
@@ -16,10 +33,13 @@ interface Purchase {
 }
 
 interface NewPurchaseItem {
+  itemType: "INGREDIENT" | "PRODUCT";
   ingredientId: string;
+  productId: string;
   quantity: string;
   cost: string;
   ingredient?: Ingredient;
+  product?: Product;
 }
 
 export default function PurchasesPage() {
@@ -27,6 +47,7 @@ export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -41,14 +62,19 @@ export default function PurchasesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [purchasesRes, suppliersRes, ingredientsRes] = await Promise.all([
+      const [purchasesRes, suppliersRes, ingredientsRes, productsRes] = await Promise.all([
         fetch("/api/purchases"),
         fetch("/api/suppliers"),
-        fetch("/api/ingredients")
+        fetch("/api/ingredients"),
+        fetch("/api/products")
       ]);
       if (purchasesRes.ok) setPurchases(await purchasesRes.json());
       if (suppliersRes.ok) setSuppliers(await suppliersRes.json());
       if (ingredientsRes.ok) setIngredients(await ingredientsRes.json());
+      if (productsRes.ok) {
+        const prodData = await productsRes.json();
+        setProducts(prodData);
+      }
     } catch (err) {
       console.error("Error fetching purchase data:", err);
     } finally {
@@ -58,6 +84,11 @@ export default function PurchasesPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Products without recipe (ready-made/retail products)
+  const nonRecipeProducts = products.filter(p => !p.hasRecipe);
+  // Fallback if none flagged: all products
+  const purchasableProducts = nonRecipeProducts.length > 0 ? nonRecipeProducts : products;
+
   const filteredPurchases = purchases.filter(p => 
     p.reference.toLowerCase().includes(query.toLowerCase()) || 
     p.supplier?.name.toLowerCase().includes(query.toLowerCase())
@@ -66,20 +97,50 @@ export default function PurchasesPage() {
   const openAdd = () => {
     setSupplierId("");
     setNote("");
-    setItems([{ ingredientId: "", quantity: "1.00", cost: "0.00" }]);
+    setItems([{ itemType: "INGREDIENT", ingredientId: "", productId: "", quantity: "1.00", cost: "0.00" }]);
     setError("");
     setShowModal(true);
   };
 
-  const handleIngredientSelect = (index: number, ingredientId: string) => {
-    const ing = ingredients.find(i => i.id.toString() === ingredientId);
+  const handleTypeChange = (index: number, newType: "INGREDIENT" | "PRODUCT") => {
     const newItems = [...items];
     newItems[index] = {
       ...newItems[index],
-      ingredientId,
-      cost: ing ? String(ing.cost) : "0.00",
-      ingredient: ing
+      itemType: newType,
+      ingredientId: "",
+      productId: "",
+      cost: "0.00",
+      ingredient: undefined,
+      product: undefined
     };
+    setItems(newItems);
+  };
+
+  const handleItemSelect = (index: number, type: "INGREDIENT" | "PRODUCT", selectedId: string) => {
+    const newItems = [...items];
+    if (type === "INGREDIENT") {
+      const ing = ingredients.find(i => i.id.toString() === selectedId);
+      newItems[index] = {
+        ...newItems[index],
+        itemType: "INGREDIENT",
+        ingredientId: selectedId,
+        productId: "",
+        cost: ing ? String(ing.cost || "0.00") : "0.00",
+        ingredient: ing,
+        product: undefined
+      };
+    } else {
+      const prod = products.find(p => p.id.toString() === selectedId);
+      newItems[index] = {
+        ...newItems[index],
+        itemType: "PRODUCT",
+        ingredientId: "",
+        productId: selectedId,
+        cost: prod ? String(prod.cost || "0.00") : "0.00",
+        ingredient: undefined,
+        product: prod
+      };
+    }
     setItems(newItems);
   };
 
@@ -89,7 +150,7 @@ export default function PurchasesPage() {
     setItems(newItems);
   };
 
-  const addItemRow = () => setItems([...items, { ingredientId: "", quantity: "1.00", cost: "0.00" }]);
+  const addItemRow = () => setItems([...items, { itemType: "INGREDIENT", ingredientId: "", productId: "", quantity: "1.00", cost: "0.00" }]);
   const removeItemRow = (index: number) => {
     if (items.length > 1) {
       setItems(items.filter((_, i) => i !== index));
@@ -103,22 +164,36 @@ export default function PurchasesPage() {
     setError("");
     
     // Validate
-    if (!supplierId) return setError("Please select a supplier");
-    if (items.some(i => !i.ingredientId || parseFloat(i.quantity) <= 0 || parseFloat(i.cost) < 0)) {
+    if (!supplierId) return setError(t("purchases.selectSupplier"));
+    const hasInvalidItem = items.some(i => {
+      const hasTarget = i.itemType === "INGREDIENT" ? !!i.ingredientId : !!i.productId;
+      const qty = parseFloat(i.quantity);
+      const c = parseFloat(i.cost);
+      return !hasTarget || isNaN(qty) || qty <= 0 || isNaN(c) || c < 0;
+    });
+
+    if (hasInvalidItem) {
       return setError("Please fill all item fields correctly with valid quantities and costs");
     }
+
+    const payloadItems = items.map(i => ({
+      ingredientId: i.itemType === "INGREDIENT" ? parseInt(i.ingredientId) : null,
+      productId: i.itemType === "PRODUCT" ? parseInt(i.productId) : null,
+      quantity: parseFloat(i.quantity) || 0,
+      cost: parseFloat(i.cost) || 0,
+    }));
 
     setSaving(true);
     try {
       const res = await fetch("/api/purchases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ supplierId, note, items }),
+        body: JSON.stringify({ supplierId: parseInt(supplierId), note, items: payloadItems }),
       });
       
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to save purchase");
+        setError(data.error || data.message || "Failed to save purchase");
         setSaving(false);
         return;
       }
@@ -181,12 +256,24 @@ export default function PurchasesPage() {
                       <div className="flex items-center gap-2"><Truck size={14} className="text-slate-400"/> {p.supplier?.name}</div>
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                      <div className="space-y-0.5">
-                        {p.items.map((item, idx) => (
-                          <div key={idx} className="text-xs">
-                            <strong className="text-slate-800 dark:text-slate-200">{item.ingredient?.name || `Ingredient #${item.id}`}</strong>: {Number(item.quantity)} {item.ingredient?.unit} @ ${Number(item.cost).toFixed(4)}/{item.ingredient?.unit}
-                          </div>
-                        ))}
+                      <div className="space-y-1">
+                        {p.items.map((item, idx) => {
+                          const isProduct = !!item.product || !!item.productId;
+                          const name = isProduct ? (item.product?.name || `Product #${item.productId}`) : (item.ingredient?.name || `Ingredient #${item.ingredientId}`);
+                          const unit = isProduct ? "pcs" : (item.ingredient?.unit || "unit");
+                          return (
+                            <div key={idx} className="text-xs flex items-center gap-1.5 flex-wrap">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                isProduct 
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800" 
+                                  : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                              }`}>
+                                {isProduct ? "Product" : "Ingredient"}
+                              </span>
+                              <strong className="text-slate-800 dark:text-slate-200">{name}</strong>: {Number(item.quantity)} {unit} @ ${Number(item.cost).toFixed(4)}/{unit}
+                            </div>
+                          );
+                        })}
                       </div>
                     </td>
                     <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">${Number(p.totalAmount).toFixed(2)}</td>
@@ -239,38 +326,111 @@ export default function PurchasesPage() {
                   <div className="space-y-2">
                     {items.map((item, index) => {
                       const matchedIng = ingredients.find(i => i.id.toString() === item.ingredientId);
+                      const matchedProd = purchasableProducts.find(p => p.id.toString() === item.productId);
+                      const unitLabel = item.itemType === "INGREDIENT" ? (matchedIng?.unit || "unit") : "pcs";
+
                       return (
                         <div key={index} className="flex gap-2 items-start bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                          <div className="flex-1">
-                            <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">{t("products.ingredient")}</label>
-                            <select value={item.ingredientId} onChange={e => handleIngredientSelect(index, e.target.value)} required className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
-                              <option value="">{t("common.search")}</option>
-                              {ingredients.map(ing => (
-                                <option key={ing.id} value={ing.id}>
-                                  {ing.name} ({ing.code}) - {ing.unit}
-                                </option>
-                              ))}
+                          {/* Item Type Switcher */}
+                          <div className="w-36 shrink-0">
+                            <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">{t("purchases.itemType")}</label>
+                            <select
+                              value={item.itemType}
+                              onChange={e => handleTypeChange(index, e.target.value as "INGREDIENT" | "PRODUCT")}
+                              className="w-full px-2.5 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
+                            >
+                              <option value="INGREDIENT">{t("purchases.typeIngredient")}</option>
+                              <option value="PRODUCT">{t("purchases.typeProduct")}</option>
                             </select>
                           </div>
-                          <div className="w-32">
+
+                          {/* Specific Item Dropdown */}
+                          <div className="flex-1 min-w-[200px]">
                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
-                              {t("products.quantity")} ({matchedIng?.unit || "unit"})
+                              {item.itemType === "INGREDIENT" ? t("products.ingredient") : t("products.title")}
                             </label>
-                            <input type="number" step="0.01" min="0.01" required placeholder="Qty" value={item.quantity} onChange={e => updateItem(index, "quantity", e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                            {item.itemType === "INGREDIENT" ? (
+                              <select
+                                value={item.ingredientId}
+                                onChange={e => handleItemSelect(index, "INGREDIENT", e.target.value)}
+                                required
+                                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                              >
+                                <option value="">{t("purchases.selectIngredient")}</option>
+                                {ingredients.map(ing => (
+                                  <option key={ing.id} value={ing.id}>
+                                    {ing.name} ({ing.code}) - {ing.unit} (Stock: {ing.stock})
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <select
+                                value={item.productId}
+                                onChange={e => handleItemSelect(index, "PRODUCT", e.target.value)}
+                                required
+                                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                              >
+                                <option value="">{t("purchases.selectProduct")}</option>
+                                {purchasableProducts.map(prod => (
+                                  <option key={prod.id} value={prod.id}>
+                                    {prod.name} ({prod.code}) - Stock: {prod.stock}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </div>
-                          <div className="w-36">
+
+                          {/* Quantity */}
+                          <div className="w-28">
+                            <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
+                              {t("products.quantity")} ({unitLabel})
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              required
+                              placeholder="Qty"
+                              value={item.quantity}
+                              onChange={e => updateItem(index, "quantity", e.target.value)}
+                              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                            />
+                          </div>
+
+                          {/* Unit Cost */}
+                          <div className="w-32">
                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
                               {t("ingredients.colUnitCost")}
                             </label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                              <input type="number" min="0" step="0.0001" required placeholder="Cost" value={item.cost} onChange={e => updateItem(index, "cost", e.target.value)} className="w-full pl-7 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.0001"
+                                required
+                                placeholder="Cost"
+                                value={item.cost}
+                                onChange={e => updateItem(index, "cost", e.target.value)}
+                                className="w-full pl-7 pr-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                              />
                             </div>
                           </div>
-                          <div className="w-32 pt-6 text-right font-semibold text-slate-700 dark:text-slate-300 text-sm shrink-0">
+
+                          {/* Subtotal */}
+                          <div className="w-28 pt-6 text-right font-semibold text-slate-700 dark:text-slate-300 text-sm shrink-0">
                             ${((parseFloat(item.quantity) || 0) * (parseFloat(item.cost) || 0)).toFixed(2)}
                           </div>
-                          <button type="button" onClick={() => removeItemRow(index)} disabled={items.length === 1} className="mt-5 p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg disabled:opacity-30 cursor-pointer"><X size={16}/></button>
+
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() => removeItemRow(index)}
+                            disabled={items.length === 1}
+                            className="mt-5 p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg disabled:opacity-30 cursor-pointer"
+                          >
+                            <X size={16}/>
+                          </button>
                         </div>
                       );
                     })}
@@ -289,7 +449,7 @@ export default function PurchasesPage() {
 
             <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 shrink-0 bg-slate-50 dark:bg-slate-900 rounded-b-2xl">
               <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">{t("common.cancel")}</button>
-              <button type="submit" form="purchaseForm" disabled={saving || !supplierId || items.some(i => !i.ingredientId)} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors">
+              <button type="submit" form="purchaseForm" disabled={saving || !supplierId || items.some(i => (i.itemType === "INGREDIENT" ? !i.ingredientId : !i.productId))} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer transition-colors">
                 {saving && <Loader2 size={14} className="animate-spin" />} {t("common.confirm")}
               </button>
             </div>
