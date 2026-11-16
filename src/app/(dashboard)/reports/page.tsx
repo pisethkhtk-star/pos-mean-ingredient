@@ -92,6 +92,96 @@ export default function ReportsPage() {
       }
       
       const result: ReportData = await res.json();
+
+      // Ensure topProducts is strictly populated from COMPLETED orders within the date range
+      if (!result.topProducts || result.topProducts.length === 0) {
+        try {
+          const ordersParams = new URLSearchParams();
+          ordersParams.set("status", "COMPLETED");
+          if (dateRange.start) ordersParams.set("startDate", dateRange.start);
+          if (dateRange.end) ordersParams.set("endDate", dateRange.end);
+
+          const ordersRes = await fetch(`/api/orders?${ordersParams.toString()}`);
+          if (ordersRes.ok) {
+            const orders = await ordersRes.json();
+            const prodMap: Record<string, { quantity: number; revenue: number; cost: number }> = {};
+            const payMap: Record<string, { amount: number; count: number }> = {};
+            let totalOrderRev = 0;
+
+            for (const order of orders) {
+              // Strictly only COMPLETED orders
+              if (order.status !== "COMPLETED") continue;
+
+              // Check date boundaries if set
+              if (dateRange.start && order.createdAt) {
+                const orderDate = new Date(order.createdAt).toISOString().split("T")[0];
+                if (orderDate < dateRange.start) continue;
+              }
+              if (dateRange.end && order.createdAt) {
+                const orderDate = new Date(order.createdAt).toISOString().split("T")[0];
+                if (orderDate > dateRange.end) continue;
+              }
+
+              // Aggregate Payment Method breakdown
+              const pMethod = order.paymentMethod || "CASH";
+              const oTotal = Number(order.total) || 0;
+              totalOrderRev += oTotal;
+              if (!payMap[pMethod]) payMap[pMethod] = { amount: 0, count: 0 };
+              payMap[pMethod].amount += oTotal;
+              payMap[pMethod].count += 1;
+
+              // Aggregate Products
+              if (Array.isArray(order.items)) {
+                for (const item of order.items) {
+                  const pName = item.product?.name || `Product #${item.id || 'item'}`;
+                  if (!prodMap[pName]) {
+                    prodMap[pName] = { quantity: 0, revenue: 0, cost: 0 };
+                  }
+                  const itemQty = Number(item.quantity) || 1;
+                  const itemSubtotal = (item.subtotal != null && !isNaN(Number(item.subtotal)))
+                    ? Number(item.subtotal)
+                    : (Number(item.price || 0) * itemQty);
+                  const unitCost = Number(item.product?.cost) || (itemSubtotal * 0.35 / itemQty);
+
+                  prodMap[pName].quantity += itemQty;
+                  prodMap[pName].revenue += itemSubtotal;
+                  prodMap[pName].cost += unitCost * itemQty;
+                }
+              }
+            }
+
+            result.topProducts = Object.entries(prodMap).map(([pName, pStats]) => {
+              const pProfit = pStats.revenue - pStats.cost;
+              const pMargin = pStats.revenue > 0 ? Math.round((pProfit / pStats.revenue) * 100) : 0;
+              return {
+                productName: pName,
+                quantity: pStats.quantity,
+                revenue: Math.round(pStats.revenue * 100) / 100,
+                cost: Math.round(pStats.cost * 100) / 100,
+                profit: Math.round(pProfit * 100) / 100,
+                marginPct: pMargin
+              };
+            });
+
+            if (!result.paymentMethods || result.paymentMethods.length === 0) {
+              result.paymentMethods = Object.entries(payMap).map(([method, pStats]) => ({
+                method,
+                amount: Math.round(pStats.amount * 100) / 100,
+                count: pStats.count,
+                sharePct: totalOrderRev > 0 ? Math.round((pStats.amount / totalOrderRev) * 100) : 0
+              }));
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn("Fallback completed orders fetch:", fallbackErr);
+        }
+      }
+
+      // Always sort topProducts strictly by QTY (quantity) descending
+      if (result.topProducts && result.topProducts.length > 0) {
+        result.topProducts.sort((a, b) => b.quantity - a.quantity);
+      }
+
       setData(result);
     } catch (err: any) {
       setError(err.message || "An error occurred while loading reports");
@@ -147,7 +237,7 @@ export default function ReportsPage() {
       ["Date", "Revenue ($)", "Cost ($)", "Profit ($)", "Orders"],
       ...data.salesByDate.map(d => [d.date, d.revenue, d.cost, d.profit, d.orders]),
       [],
-      ["Top Products", "Quantity", "Revenue ($)", "Cost ($)", "Profit ($)", "Margin (%)"],
+      ["Top Products (Sorted by QTY)", "Quantity (Sold)", "Revenue ($)", "Cost ($)", "Profit ($)", "Margin (%)"],
       ...(data.topProducts || []).map(p => [p.productName, p.quantity, p.revenue, p.cost, p.profit, `${p.marginPct}%`]),
       [],
       ["Payment Method", "Amount ($)", "Invoices Count", "Share (%)"],
@@ -491,17 +581,21 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* TAB 2: TOP PRODUCTS */}
+          {/* TAB 2: TOP PRODUCTS (Sorted Strictly by QTY SOLD) */}
           {activeTab === "PRODUCTS" && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 gap-2">
                 <div className="flex items-center gap-2">
                   <Award size={18} className="text-amber-500" />
                   <h2 className="font-semibold text-slate-900 dark:text-slate-100">
                     {t("reports.tabProducts")}
                   </h2>
                 </div>
-                <span className="text-xs text-slate-500">រៀបតាមចំណូលច្រើនទៅតិច</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800/50">
+                    🏆 {t("reports.sortedByQty") || "រៀបតាមចំនួនលក់ច្រើនជាងគេ (QTY)"}
+                  </span>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -509,7 +603,9 @@ export default function ReportsPage() {
                     <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
                       <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">#</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.colProduct")}</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.colQty")}</th>
+                      <th className="px-5 py-3 text-right text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50/60 dark:bg-indigo-950/40">
+                        {t("reports.colQty")} (QTY)
+                      </th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.colRevenue")}</th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.colCost")}</th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.colProfit")}</th>
@@ -520,14 +616,18 @@ export default function ReportsPage() {
                     {data.topProducts && data.topProducts.length > 0 ? (
                       data.topProducts.map((p, idx) => (
                         <tr key={p.productName} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-5 py-3.5 text-xs font-bold text-slate-400">{idx + 1}</td>
+                          <td className="px-5 py-3.5 text-xs font-bold text-slate-400">
+                            {idx === 0 ? "🥇 1" : idx === 1 ? "🥈 2" : idx === 2 ? "🥉 3" : idx + 1}
+                          </td>
                           <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0">
                               {p.productName ? p.productName.charAt(0).toUpperCase() : "P"}
                             </div>
-                            <span>{p.productName}</span>
+                            <span className="truncate">{p.productName}</span>
                           </td>
-                          <td className="px-5 py-3.5 text-right font-medium text-slate-600 dark:text-slate-300">{p.quantity}</td>
+                          <td className="px-5 py-3.5 text-right font-black text-indigo-600 dark:text-indigo-400 text-base bg-indigo-50/30 dark:bg-indigo-950/20">
+                            {p.quantity}
+                          </td>
                           <td className="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-slate-100">${p.revenue.toFixed(2)}</td>
                           <td className="px-5 py-3.5 text-right text-slate-500">${p.cost.toFixed(2)}</td>
                           <td className="px-5 py-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400">${p.profit.toFixed(2)}</td>
@@ -562,21 +662,25 @@ export default function ReportsPage() {
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
-                  {data.paymentMethods && data.paymentMethods.map((pm, idx) => (
-                    <div key={pm.method} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{pm.method.replace("_", " ")}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{pm.count} វិក្កយបត្រ (Invoices)</p>
+                  {data.paymentMethods && data.paymentMethods.length > 0 ? (
+                    data.paymentMethods.map((pm, idx) => (
+                      <div key={pm.method} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                          <div>
+                            <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{pm.method.replace("_", " ")}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{pm.count} វិក្កយបត្រ (Invoices)</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-base font-bold text-slate-900 dark:text-slate-100">${pm.amount.toFixed(2)}</p>
+                          <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">{pm.sharePct}% នៃចំណូលសរុប</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-base font-bold text-slate-900 dark:text-slate-100">${pm.amount.toFixed(2)}</p>
-                        <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">{pm.sharePct}% នៃចំណូលសរុប</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-slate-400">{t("common.noData")}</div>
+                  )}
                 </div>
               </div>
 
