@@ -64,6 +64,24 @@ interface ReportData {
 
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#06b6d4", "#8b5cf6", "#ec4899", "#3b82f6"];
 
+const formatLocalDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getInitialMonthRange = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return {
+    start: `${year}-${month}-01`,
+    end: `${year}-${month}-${day}`
+  };
+};
+
 export default function ReportsPage() {
   const { t } = useLanguageStore();
   const { user } = useAuthStore();
@@ -72,8 +90,8 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PRODUCTS" | "PAYMENTS" | "CASHIERS">("OVERVIEW");
-  const [quickFilter, setQuickFilter] = useState<"today" | "week" | "month" | "all" | "custom">("all");
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [quickFilter, setQuickFilter] = useState<"today" | "week" | "month" | "all" | "custom">("month");
+  const [dateRange, setDateRange] = useState(getInitialMonthRange);
 
   const fetchReportData = useCallback(async () => {
     try {
@@ -198,16 +216,15 @@ export default function ReportsPage() {
   const setQuickDate = (type: "today" | "week" | "month" | "all") => {
     setQuickFilter(type);
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = formatLocalDate(today);
     if (type === "today") {
       setDateRange({ start: todayStr, end: todayStr });
     } else if (type === "week") {
-      const prev = new Date();
-      prev.setDate(today.getDate() - 7);
-      setDateRange({ start: prev.toISOString().split("T")[0], end: todayStr });
+      const prev = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+      setDateRange({ start: formatLocalDate(prev), end: todayStr });
     } else if (type === "month") {
-      const prev = new Date(today.getFullYear(), today.getMonth(), 1);
-      setDateRange({ start: prev.toISOString().split("T")[0], end: todayStr });
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      setDateRange({ start: formatLocalDate(firstDay), end: todayStr });
     } else {
       setDateRange({ start: "", end: "" });
     }
