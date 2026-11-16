@@ -116,7 +116,7 @@ export default function SuppliersPage() {
             <Truck size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("suppliers.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-1.5">
             {suppliers.length} {t("suppliers.count")}
           </p>
         </div>

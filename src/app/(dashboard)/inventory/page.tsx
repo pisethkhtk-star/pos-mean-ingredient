@@ -108,7 +108,7 @@ export default function InventoryPage() {
             <Warehouse size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("inventory.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{logs.length} {t("inventory.auditCount")}</p>
+          <p className="text-sm text-slate-500 mt-1.5">{logs.length} {t("inventory.auditCount")}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={fetchLogs} className="p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">

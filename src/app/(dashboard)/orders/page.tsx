@@ -89,7 +89,7 @@ export default function OrdersPage() {
             <ClipboardList size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("orders.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{orders.length} {t("orders.orderCount")} · {t("orders.revenue")}: ${totalRevenue.toFixed(2)}</p>
+          <p className="text-sm text-slate-500 mt-1.5">{orders.length} {t("orders.orderCount")} · {t("orders.revenue")}: ${totalRevenue.toFixed(2)}</p>
         </div>
         <button onClick={exportToCSV} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer">
           <Download size={16} />

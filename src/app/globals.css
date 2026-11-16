@@ -34,6 +34,17 @@ html[lang="km"] * {
   font-family: var(--font-battambang), "Khmer OS Battambang", system-ui, -apple-system, sans-serif !important;
 }
 
+html[lang="km"] h1,
+html[lang="km"] h2,
+html[lang="km"] h3,
+html[lang="km"] h4 {
+  line-height: 1.4 !important;
+}
+
+html[lang="km"] p {
+  line-height: 1.5;
+}
+
 html[lang="en"],
 html[lang="en"] * {
   font-family: var(--font-sans), var(--font-battambang), "Khmer OS Battambang", system-ui, -apple-system, sans-serif !important;

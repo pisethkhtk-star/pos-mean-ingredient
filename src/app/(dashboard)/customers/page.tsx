@@ -63,7 +63,7 @@ export default function CustomersPage() {
             <Users size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("customers.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{customers.length} {t("customers.customerCount")} · {totalPoints.toLocaleString()} {t("customers.loyaltyPoints")}</p>
+          <p className="text-sm text-slate-500 mt-1.5">{customers.length} {t("customers.customerCount")} · {totalPoints.toLocaleString()} {t("customers.loyaltyPoints")}</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
           <Plus size={16} /> {t("customers.addCustomer")}

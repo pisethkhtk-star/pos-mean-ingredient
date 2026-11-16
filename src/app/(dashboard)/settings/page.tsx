@@ -100,7 +100,7 @@ export default function SettingsPage() {
           <SettingsIcon size={24} className="text-indigo-600 dark:text-indigo-400" />
           {t("settings.title")}
         </h1>
-        <p className="text-sm text-slate-500 mt-0.5">{t("settings.subtitle")}</p>
+        <p className="text-sm text-slate-500 mt-1.5">{t("settings.subtitle")}</p>
       </div>
 
       <form onSubmit={handleSave} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">

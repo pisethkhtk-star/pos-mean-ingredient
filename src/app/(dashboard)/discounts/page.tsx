@@ -163,7 +163,7 @@ export default function DiscountsPage() {
             <Ticket size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("discounts.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{discounts.length} {t("discounts.promoCount")}</p>
+          <p className="text-sm text-slate-500 mt-1.5">{discounts.length} {t("discounts.promoCount")}</p>
         </div>
         <button
           onClick={openAdd}

@@ -4,13 +4,13 @@ export const translations: Record<Language, Record<string, string>> = {
   km: {
     // Navigation / Sidebar
     "nav.dashboard": "ផ្ទាំងគ្រប់គ្រង",
-    "nav.pos": "ចំណុចលក់ POS",
+    "nav.pos": "ផ្ទាំងលក់",
     "nav.products": "ទំនិញ",
     "nav.ingredients": "គ្រឿងផ្សំ",
     "nav.categories": "ប្រភេទ",
     "nav.discounts": "ការបញ្ចុះតម្លៃ",
     "nav.inventory": "ស្តុកទំនិញ",
-    "nav.purchases": "ការបញ្ជាទិញ",
+    "nav.purchases": "ការបញ្ជាទិញបញ្ចូលស្តុក",
     "nav.suppliers": "អ្នកផ្គត់ផ្គង់",
     "nav.customers": "អតិថិជន",
     "nav.orders": "ប្រវត្តិលក់",
@@ -19,8 +19,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "nav.roles": "តួនាទី & សិទ្ធិ",
     "nav.settings": "ការកំណត់",
     "nav.logout": "ចាកចេញ",
-    "nav.darkMode": "ទម្រង់ងងឹត",
-    "nav.lightMode": "ទម្រង់ពន្លឺ",
+    "nav.darkMode": "មុខងារយប់",
+    "nav.lightMode": "មុខងារពន្លឺ",
     "nav.language": "ភាសា",
     "nav.khmer": "ខ្មែរ",
     "nav.english": "English",
@@ -179,9 +179,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "roles.savePermissions": "រក្សាទុកសិទ្ធិ",
 
     // Products Management
-    "products.title": "កាតាឡុកទំនិញ & គ្រប់គ្រងស្តុក",
+    "products.title": "កាតាឡុកទំនិញ",
     "products.subtitle": "បញ្ជីទំនិញ និងរូបមន្តគ្រឿងផ្សំ",
-    "products.configuredCount": "ទំនិញបានកំណត់ក្នុងកាតាឡុក",
+    "products.configuredCount": "មុខទំនិញក្នុងកាតាឡុក",
     "products.addProduct": "បន្ថែមទំនិញ",
     "products.editProduct": "កែប្រែទំនិញ",
     "products.searchPlaceholder": "ស្វែងរកតាមឈ្មោះ ឬកូដទំនិញ...",
@@ -194,7 +194,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "products.colStockTracking": "ការតាមដានស្តុក & រូបមន្ត",
     "products.colActions": "សកម្មភាព",
     "products.recipeModeNoIng": "របៀបរូបមន្ត (មិនទាន់មានគ្រឿងផ្សំ)",
-    "products.directStockBadge": "ស្តុកផ្ទាល់",
+    "products.directStockBadge": "មិនប្រើវត្ថុធាតុដើម",
     "products.units": "ឯកតា",
     "products.noProducts": "រកមិនឃើញទំនិញទេ",
     "products.editTitle": "កែប្រែព័ត៌មានទំនិញ",
@@ -210,13 +210,13 @@ export const translations: Record<Language, Record<string, string>> = {
     "products.autoRecipeCost": "គណនាស្វ័យប្រវត្តិតាមរូបមន្ត",
     "products.directStockQty": "ចំនួនស្តុកផ្ទាល់",
     "products.minStockAlert": "កម្រិតស្តុកអប្បបរមាប្រកាសអាសន្ន",
-    "products.useRecipe": "ប្រើរូបមន្តគ្រឿងផ្សំដើម",
+    "products.useRecipe": "ប្រើវត្ថុធាតុដើម",
     "products.useRecipeDesc": "ស្តុកត្រូវបានកាត់តាមគ្រឿងផ្សំធាតុដើម",
     "products.directStockDesc": "តាមដានស្តុកតាមចំនួនទំនិញផ្ទាល់",
     "products.productImage": "រូបភាពទំនិញ",
     "products.noImage": "គ្មានរូបភាព",
-    "products.imageTip": "បញ្ចូលរូបភាព PNG, JPG ឬ WEBP សម្រាប់បង្ហាញលើផ្ទាំង POS",
-    "products.recipeRequired": "គ្រឿងផ្សំដែលត្រូវការក្នុងរូបមន្ត (ក្នុង១ឯកតា)",
+    "products.imageTip": "បញ្ចូលរូបភាព PNG, JPG",
+    "products.recipeRequired": "បញ្ចូលវត្ថុធាតុដើម (ក្នុង១ឯកតា)",
     "products.addIngredientLine": "បន្ថែមជួរគ្រឿងផ្សំ",
     "products.noIngredientsStock": "រកមិនឃើញគ្រឿងផ្សំក្នុងស្តុកទេ។ សូមបង្កើតគ្រឿងផ្សំក្នុងទំព័រគ្រប់គ្រងគ្រឿងផ្សំជាមុនសិន។",
     "products.noIngredientsAdded": "មិនទាន់មានគ្រឿងផ្សំបន្ថែមទេ។ សូមចុច \"+ បន្ថែមជួរគ្រឿងផ្សំ\" ដើម្បីបញ្ជាក់ធាតុដើម។",
@@ -226,12 +226,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "products.createBtn": "បង្កើតទំនិញ",
 
     // Ingredients Management
-    "ingredients.title": "គ្រប់គ្រងគ្រឿងផ្សំ",
+    "ingredients.title": "វត្ថុធាតុដើម",
     "ingredients.subtitle": "បញ្ជីគ្រឿងផ្សំ និងស្តុកវត្ថុធាតុដើម",
     "ingredients.addIngredient": "បន្ថែមគ្រឿងផ្សំ",
     "ingredients.editIngredient": "កែប្រែគ្រឿងផ្សំ",
     "ingredients.searchPlaceholder": "ស្វែងរកតាមឈ្មោះ ឬកូដគ្រឿងផ្សំ...",
-    "ingredients.lowStockOnly": "ទំនិញជិតអស់ពីស្តុកតែប៉ុណ្ណោះ",
+    "ingredients.lowStockOnly": "បង្ហាញទំនិញជិតអស់ស្តុក",
     "ingredients.loading": "កំពុងផ្ទុកគ្រឿងផ្សំ...",
     "ingredients.noIngredients": "រកមិនឃើញគ្រឿងផ្សំទេ",
     "ingredients.noIngredientsSub": "សូមចាប់ផ្តើមបន្ថែមគ្រឿងផ្សំ និងវត្ថុធាតុដើមដំបូងរបស់អ្នក។",
@@ -275,7 +275,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "categories.createCategory": "បង្កើតប្រភេទ",
 
     // Discounts
-    "discounts.title": "គ្រប់គ្រងការបញ្ចុះតម្លៃ",
+    "discounts.title": "ការបញ្ចុះតម្លៃ",
     "discounts.subtitle": "បង្កើតប្រូម៉ូសិន និងគូប៉ុងបញ្ចុះតម្លៃ",
     "discounts.promoCount": "ប្រូម៉ូសិនសកម្ម",
     "discounts.addDiscount": "បន្ថែមការបញ្ចុះតម្លៃ",
@@ -299,7 +299,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "discounts.editDiscount": "កែប្រែការបញ្ចុះតម្លៃ",
 
     // Inventory
-    "inventory.title": "ស្តុកទំនិញ & កំណត់ត្រាកែសម្រួល",
+    "inventory.title": "ស្តុកទំនិញ",
     "inventory.subtitle": "តាមដាន និងកែសម្រួលស្តុកទំនិញ",
     "inventory.auditCount": "កំណត់ត្រាចរាចរស្តុក",
     "inventory.adjustStock": "កែសម្រួលស្តុក",
@@ -322,9 +322,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "inventory.product": "ទំនិញសម្រេច (Finished Product)",
 
     // Purchases
-    "purchases.title": "ការបញ្ជាទិញចូលស្តុក (Purchase Orders)",
+    "purchases.title": "ការបញ្ជាទិញចូលស្តុក",
     "purchases.subtitle": "ប្រវត្តិនាំចូលទំនិញ និងគ្រឿងផ្សំពីអ្នកផ្គត់ផ្គង់",
-    "purchases.orderCount": "ការបញ្ជាទិញចូលស្តុកបានកត់ត្រា",
+    "purchases.orderCount": "ប័ណ្ណបញ្ជាទិញបានកត់ត្រា",
     "purchases.newPurchase": "បង្កើតការបញ្ជាទិញថ្មី",
     "purchases.searchPlaceholder": "ស្វែងរកតាមលេខយោង ឬអ្នកផ្គត់ផ្គង់...",
     "purchases.colRef": "លេខយោង (PO #)",
@@ -339,9 +339,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "purchases.note": "កំណត់សម្គាល់",
 
     // Suppliers
-    "suppliers.title": "គ្រប់គ្រងអ្នកផ្គត់ផ្គង់",
+    "suppliers.title": "អ្នកផ្គត់ផ្គង់",
     "suppliers.subtitle": "ព័ត៌មានក្រុមហ៊ុន និងអ្នកផ្គត់ផ្គង់ទំនិញ",
-    "suppliers.count": "អ្នកផ្គត់ផ្គង់បានចុះឈ្មោះ",
+    "suppliers.count": "នាក់បានចុះឈ្មោះ",
     "suppliers.addSupplier": "បន្ថែមអ្នកផ្គត់ផ្គង់",
     "suppliers.searchPlaceholder": "ស្វែងរកតាមឈ្មោះ ទូរស័ព្ទ អ៊ីមែល...",
     "suppliers.colName": "ក្រុមហ៊ុន / ឈ្មោះ",
@@ -353,9 +353,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "suppliers.companyName": "ឈ្មោះក្រុមហ៊ុន / អ្នកផ្គត់ផ្គង់",
 
     // Customers
-    "customers.title": "គ្រប់គ្រងអតិថិជន",
+    "customers.title": "អតិថិជន",
     "customers.subtitle": "បញ្ជីអតិថិជន និងប្រព័ន្ធសន្សំពិន្ទុ",
-    "customers.customerCount": "អតិថិជន",
+    "customers.customerCount": "នាក់",
     "customers.loyaltyPoints": "ពិន្ទុសន្សំបច្ចុប្បន្នសរុប",
     "customers.addCustomer": "បន្ថែមអតិថិជន",
     "customers.searchPlaceholder": "ស្វែងរកតាមឈ្មោះ លេខទូរស័ព្ទ អ៊ីមែល...",
@@ -628,7 +628,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "products.autoRecipeCost": "Auto Recipe Cost",
     "products.directStockQty": "Direct Stock Quantity",
     "products.minStockAlert": "Min Stock Alert Threshold",
-    "products.useRecipe": "Use Raw Ingredients Recipe",
+    "products.useRecipe": "Use Ingredients",
     "products.useRecipeDesc": "Stock is derived from raw material ingredients",
     "products.directStockDesc": "Track stock by direct product quantity",
     "products.productImage": "Product Image",

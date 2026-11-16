@@ -37,7 +37,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  
+
   // Product Add/Edit Modal
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -182,7 +182,7 @@ export default function ProductsPage() {
 
     setSaving(true);
     setError("");
-    
+
     try {
       let imageUrl = form.image;
       if (imageFile) {
@@ -244,7 +244,7 @@ export default function ProductsPage() {
             <ShoppingBag size={24} className="text-indigo-600 dark:text-indigo-400" />
             {t("products.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{products.length} {t("products.configuredCount")}</p>
+          <p className="text-sm text-slate-500 mt-1.5">{products.length} {t("products.configuredCount")}</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
           <Plus size={16} /> {t("products.addProduct")}
@@ -346,10 +346,10 @@ export default function ProductsPage() {
               </h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X size={18} /></button>
             </div>
-            
+
             <form onSubmit={handleSave} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
               {error && <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 rounded-xl text-sm font-medium">{error}</div>}
-              
+
               {/* Product Basic Info */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">{t("products.basicDetails")}</h3>
@@ -377,7 +377,7 @@ export default function ProductsPage() {
                     <input type="number" step="0.01" min="0" required placeholder="3.50" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
                       className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
                   </div>
-                  
+
                   {/* Cost Input */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center justify-between">
@@ -393,13 +393,13 @@ export default function ProductsPage() {
                         value={
                           recipeItems.length > 0
                             ? recipeItems
-                                .reduce((sum, item) => {
-                                  const ing = availableIngredients.find((i) => i.id === item.ingredientId);
-                                  const qty = parseFloat(item.quantity) || 0;
-                                  const ingCost = parseFloat(String(ing?.cost || 0));
-                                  return sum + qty * ingCost;
-                                }, 0)
-                                .toFixed(2)
+                              .reduce((sum, item) => {
+                                const ing = availableIngredients.find((i) => i.id === item.ingredientId);
+                                const qty = parseFloat(item.quantity) || 0;
+                                const ingCost = parseFloat(String(ing?.cost || 0));
+                                return sum + qty * ingCost;
+                              }, 0)
+                              .toFixed(2)
                             : (form.cost || "0.00")
                         }
                         className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold font-mono focus:outline-none cursor-not-allowed"
@@ -454,9 +454,9 @@ export default function ProductsPage() {
                         <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
                           {hasRecipe ? t("products.useRecipe") : t("products.directStockBadge")}
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        {/* <span className="text-[11px] text-slate-400">
                           {hasRecipe ? t("products.useRecipeDesc") : t("products.directStockDesc")}
-                        </span>
+                        </span> */}
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer select-none">
