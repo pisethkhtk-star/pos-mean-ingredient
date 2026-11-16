@@ -264,6 +264,24 @@ export const translations: Record<Language, Record<string, string>> = {
     "ingredients.minStockAlert": "ស្តុកអប្បបរមាប្រកាសអាសន្ន",
     "ingredients.deleteAdminOnly": "មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិលុបគ្រឿងផ្សំ",
     "ingredients.adjustAdminOnly": "មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិកែសម្រួលស្តុក",
+    "ingredients.manageUnits": "គ្រប់គ្រងខ្នាត",
+    "ingredients.newUnitQuick": "+ បង្កើតខ្នាតថ្មី",
+
+    // Units of Measurement
+    "units.title": "គ្រប់គ្រងខ្នាតរង្វាស់",
+    "units.subtitle": "កំណត់ និងបង្កើតខ្នាតរង្វាស់សម្រាប់គ្រឿងផ្សំ និងទំនិញ",
+    "units.addUnit": "បន្ថែមខ្នាតថ្មី",
+    "units.editUnit": "កែប្រែខ្នាត",
+    "units.name": "ឈ្មោះខ្នាត",
+    "units.symbol": "និមិត្តសញ្ញា/កូដ",
+    "units.description": "ពិពណ៌នា",
+    "units.placeholderName": "ឧ. គីឡូក្រាម, កំប៉ុង, ដប, កញ្ចប់, ប្រអប់...",
+    "units.placeholderSymbol": "ឧ. kg, g, can, bottle, pack, box...",
+    "units.placeholderDesc": "ពិពណ៌នាបន្ថែមពីការប្រើប្រាស់ខ្នាតនេះ (ស្រេចចិត្ត)...",
+    "units.deleteConfirm": "តើអ្នកប្រាកដថាចង់លុបខ្នាតនេះឬ?",
+    "units.adminOnly": "មានតែ Admin ប៉ុណ្ណោះដែលអាចបង្កើត កែប្រែ ឬលុបខ្នាតបាន",
+    "units.count": "ខ្នាតដែលមាន",
+    "units.symbolHelper": "និមិត្តសញ្ញានឹងត្រូវយកទៅប្រើក្នុងបញ្ជីគ្រឿងផ្សំ និងរបាយការណ៍",
 
     // Categories
     "categories.title": "ប្រភេទផលិតផល",
@@ -445,6 +463,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "reports.thisMonth": "ខែនេះ",
     "reports.allTime": "ទាំងអស់",
     "reports.to": "ដល់",
+    "reports.average_invoice": "មធ្យមភាគក្នុងមួយវិក័យបត្រ",
+    "reports.costprice": "ចំណាយថ្លៃដើម",
 
     // Settings
     "settings.title": "ការកំណត់ហាង & ពន្ធ",
@@ -722,6 +742,24 @@ export const translations: Record<Language, Record<string, string>> = {
     "ingredients.minStockAlert": "Min Stock Alert Threshold",
     "ingredients.deleteAdminOnly": "Only Admin has permission to delete ingredients",
     "ingredients.adjustAdminOnly": "Only Admin has permission to adjust stock",
+    "ingredients.manageUnits": "Manage Units",
+    "ingredients.newUnitQuick": "+ New Unit",
+
+    // Units of Measurement
+    "units.title": "Units of Measurement",
+    "units.subtitle": "Define and manage measurement units for ingredients and products",
+    "units.addUnit": "Add New Unit",
+    "units.editUnit": "Edit Unit",
+    "units.name": "Unit Name",
+    "units.symbol": "Symbol / Code",
+    "units.description": "Description",
+    "units.placeholderName": "e.g. Kilogram, Can, Bottle, Pack, Box...",
+    "units.placeholderSymbol": "e.g. kg, g, can, bottle, pack, box...",
+    "units.placeholderDesc": "Optional notes on how this unit is used...",
+    "units.deleteConfirm": "Are you sure you want to delete this unit?",
+    "units.adminOnly": "Only Admin can create, edit, or delete measurement units",
+    "units.count": "units available",
+    "units.symbolHelper": "Symbol used across ingredient recipes and inventory logs",
 
     // Categories
     "categories.title": "Product Categories",
@@ -903,6 +941,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "reports.thisMonth": "This Month",
     "reports.allTime": "All Time",
     "reports.to": "to",
+    "reports.average_invoice": "Average per invoice",
+    "reports.costprice": "Cost price",
 
     // Settings
     "settings.title": "Store & Tax Settings",

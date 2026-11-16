@@ -15,9 +15,17 @@ import {
   XCircle,
   FileText,
   Sliders,
+  Scale,
 } from "lucide-react";
 import { useLanguageStore } from "@/store/languageStore";
 import { useAuthStore } from "@/store/authStore";
+
+interface MeasurementUnit {
+  id: number;
+  name: string;
+  symbol: string;
+  description?: string;
+}
 
 interface Ingredient {
   id: number;
@@ -84,6 +92,108 @@ export default function IngredientsPage() {
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
+  // Units Management
+  const [unitsList, setUnitsList] = useState<MeasurementUnit[]>([]);
+  const [loadingUnits, setLoadingUnits] = useState(false);
+  const [showUnitsModal, setShowUnitsModal] = useState(false);
+  const [showQuickUnitModal, setShowQuickUnitModal] = useState(false);
+  const [unitForm, setUnitForm] = useState({ name: "", symbol: "", description: "" });
+  const [savingUnit, setSavingUnit] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<MeasurementUnit | null>(null);
+  const [unitError, setUnitError] = useState("");
+
+  const fetchUnits = useCallback(async () => {
+    setLoadingUnits(true);
+    try {
+      const res = await fetch("/api/units");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setUnitsList(data);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching units:", err);
+    } finally {
+      setLoadingUnits(false);
+    }
+    // Fallback default units if API empty or initial
+    setUnitsList([
+      { id: 1, name: "Kilogram", symbol: "kg" },
+      { id: 2, name: "Gram", symbol: "g" },
+      { id: 3, name: "Liter", symbol: "liter" },
+      { id: 4, name: "Milliliter", symbol: "ml" },
+      { id: 5, name: "Can", symbol: "can" },
+      { id: 6, name: "Bottle", symbol: "bottle" },
+      { id: 7, name: "Pieces", symbol: "pcs" },
+      { id: 8, name: "Pack", symbol: "pack" },
+      { id: 9, name: "Bag", symbol: "bag" },
+      { id: 10, name: "Box", symbol: "box" },
+      { id: 11, name: "Cup", symbol: "cup" },
+      { id: 12, name: "Ounce", symbol: "oz" },
+      { id: 13, name: "Tablespoon", symbol: "tbsp" },
+      { id: 14, name: "Teaspoon", symbol: "tsp" },
+    ]);
+  }, []);
+
+  const handleSaveUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      setUnitError(t("units.adminOnly"));
+      return;
+    }
+    if (!unitForm.name.trim() || !unitForm.symbol.trim()) {
+      setUnitError("Please enter both unit name and symbol");
+      return;
+    }
+    setSavingUnit(true);
+    setUnitError("");
+    try {
+      const url = editingUnit ? `/api/units/${editingUnit.id}` : "/api/units";
+      const method = editingUnit ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(unitForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUnitError(data.message || data.error || "Failed to save unit");
+        return;
+      }
+      if (showQuickUnitModal) {
+        const newSym = data.symbol || unitForm.symbol.trim().toLowerCase();
+        setForm((prev) => ({ ...prev, unit: newSym }));
+        setShowQuickUnitModal(false);
+      } else {
+        setEditingUnit(null);
+      }
+      setUnitForm({ name: "", symbol: "", description: "" });
+      fetchUnits();
+    } catch (err: any) {
+      setUnitError(err.message || "Failed to save unit");
+    } finally {
+      setSavingUnit(false);
+    }
+  };
+
+  const handleDeleteUnit = async (id: number) => {
+    if (!isAdmin) {
+      alert(t("units.adminOnly"));
+      return;
+    }
+    if (!confirm(t("units.deleteConfirm"))) return;
+    try {
+      const res = await fetch(`/api/units/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchUnits();
+      }
+    } catch (err) {
+      console.error("Delete unit error:", err);
+    }
+  };
+
   const fetchIngredients = useCallback(async () => {
     setLoading(true);
     let url = `/api/ingredients?search=${encodeURIComponent(search)}`;
@@ -101,7 +211,8 @@ export default function IngredientsPage() {
 
   useEffect(() => {
     fetchIngredients();
-  }, [fetchIngredients]);
+    fetchUnits();
+  }, [fetchIngredients, fetchUnits]);
 
   const openAdd = () => {
     setEditing(null);
@@ -256,12 +367,25 @@ export default function IngredientsPage() {
             <Boxes className="text-indigo-600 dark:text-indigo-400" /> {t("ingredients.title")}
           </h1>
         </div>
-        <button
-          onClick={openAdd}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors cursor-pointer"
-        >
-          <Plus size={18} /> {t("ingredients.addIngredient")}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setUnitError("");
+              setEditingUnit(null);
+              setUnitForm({ name: "", symbol: "", description: "" });
+              setShowUnitsModal(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
+          >
+            <Scale size={16} className="text-indigo-600 dark:text-indigo-400" /> {t("ingredients.manageUnits")}
+          </button>
+          <button
+            onClick={openAdd}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors cursor-pointer"
+          >
+            <Plus size={18} /> {t("ingredients.addIngredient")}
+          </button>
+        </div>
       </div>
 
       {/* Controls & Search */}
@@ -481,17 +605,33 @@ export default function IngredientsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {t("ingredients.unitLabel")} <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {t("ingredients.unitLabel")} <span className="text-rose-500">*</span>
+                    </label>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUnitError("");
+                          setEditingUnit(null);
+                          setUnitForm({ name: "", symbol: "", description: "" });
+                          setShowQuickUnitModal(true);
+                        }}
+                        className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      >
+                        {t("ingredients.newUnitQuick")}
+                      </button>
+                    )}
+                  </div>
                   <select
                     value={form.unit}
                     onChange={(e) => setForm({ ...form, unit: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   >
-                    {units.map((u) => (
-                      <option key={u} value={u}>
-                        {u}
+                    {unitsList.map((u) => (
+                      <option key={u.id || u.symbol} value={u.symbol}>
+                        {u.symbol} ({u.name})
                       </option>
                     ))}
                   </select>
@@ -757,6 +897,254 @@ export default function IngredientsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Manage Units */}
+      {showUnitsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 relative max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Scale className="text-indigo-600 dark:text-indigo-400" size={20} />
+                {t("units.title")}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowUnitsModal(false);
+                  setEditingUnit(null);
+                  setUnitError("");
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Add / Edit Unit Form (Admin only) */}
+            {isAdmin ? (
+              <form onSubmit={handleSaveUnit} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {editingUnit ? t("units.editUnit") : t("units.addUnit")}
+                  </span>
+                  {editingUnit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingUnit(null);
+                        setUnitForm({ name: "", symbol: "", description: "" });
+                      }}
+                      className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
+                {unitError && (
+                  <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs">
+                    {unitError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      {t("units.name")} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={t("units.placeholderName")}
+                      value={unitForm.name}
+                      onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      {t("units.symbol")} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={t("units.placeholderSymbol")}
+                      value={unitForm.symbol}
+                      onChange={(e) => setUnitForm({ ...unitForm, symbol: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                    {t("units.description")}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t("units.placeholderDesc")}
+                    value={unitForm.description}
+                    onChange={(e) => setUnitForm({ ...unitForm, description: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={savingUnit}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    {savingUnit && <Loader2 className="animate-spin" size={14} />}
+                    {editingUnit ? "Update Unit" : t("units.addUnit")}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl text-amber-700 dark:text-amber-300 text-xs">
+                {t("units.adminOnly")}
+              </div>
+            )}
+
+            {/* Units List Table */}
+            <div className="flex-1 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase sticky top-0 border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th className="px-3 py-2.5">{t("units.symbol")}</th>
+                    <th className="px-3 py-2.5">{t("units.name")}</th>
+                    <th className="px-3 py-2.5">{t("units.description")}</th>
+                    {isAdmin && <th className="px-3 py-2.5 text-right">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {unitsList.map((u) => (
+                    <tr key={u.id || u.symbol} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-3 py-2 font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        {u.symbol}
+                      </td>
+                      <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
+                        {u.name}
+                      </td>
+                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                        {u.description || "—"}
+                      </td>
+                      {isAdmin && (
+                        <td className="px-3 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUnit(u);
+                                setUnitForm({
+                                  name: u.name,
+                                  symbol: u.symbol,
+                                  description: u.description || "",
+                                });
+                                setUnitError("");
+                              }}
+                              title="Edit"
+                              className="p-1 rounded text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUnit(u.id)}
+                              title="Delete"
+                              className="p-1 rounded text-rose-500 hover:text-rose-700 cursor-pointer"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Quick Add Unit (directly from ingredient creation) */}
+      {showQuickUnitModal && (
+        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 relative">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                <Scale className="text-indigo-600 dark:text-indigo-400" size={18} />
+                {t("units.addUnit")}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowQuickUnitModal(false);
+                  setUnitError("");
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {unitError && (
+              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs">
+                {unitError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveUnit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {t("units.name")} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={t("units.placeholderName")}
+                  value={unitForm.name}
+                  onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {t("units.symbol")} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={t("units.placeholderSymbol")}
+                  value={unitForm.symbol}
+                  onChange={(e) => setUnitForm({ ...unitForm, symbol: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 dark:text-white font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">{t("units.symbolHelper")}</p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickUnitModal(false)}
+                  className="px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingUnit}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  {savingUnit && <Loader2 className="animate-spin" size={14} />}
+                  Save & Select
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
