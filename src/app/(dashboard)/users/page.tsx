@@ -199,7 +199,7 @@ export default function UsersPage() {
             <UserCog size={26} className="text-indigo-600 dark:text-indigo-400" />
             {t("users.title")}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-2">
             {t("users.subtitle")}
           </p>
         </div>
@@ -247,7 +247,7 @@ export default function UsersPage() {
                         <div>
                           <div>{u.name}</div>
                           {u.id === user.id && (
-                            <span className="text-[10px] text-indigo-500 font-medium">(You)</span>
+                            <span className="text-[10px] text-indigo-500 font-medium">({t("users.you")})</span>
                           )}
                         </div>
                       </td>
@@ -269,12 +269,12 @@ export default function UsersPage() {
                         {hasCustom ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
                             <Sliders size={12} />
-                            Individual ({u.permissions?.length} pages)
+                            {t("users.individual")} ({u.permissions?.length} {t("users.pages")})
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                             <ShieldCheck size={12} />
-                            Role Default
+                            {t("users.roleDefault")}
                           </span>
                         )}
                       </td>

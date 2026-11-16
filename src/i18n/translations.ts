@@ -157,7 +157,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "receipt.simulate": "វិក្កយបត្រគំរូ",
 
     // Users & Roles
-    "users.title": "គ្រប់គ្រងអ្នកប្រើប្រាស់",
+    "users.title": "អ្នកប្រើប្រាស់",
     "users.subtitle": "បង្កើត កែប្រែ និងកំណត់សិទ្ធិបុគ្គលិក",
     "users.addUser": "បន្ថែមអ្នកប្រើប្រាស់",
     "users.editUser": "កែប្រែអ្នកប្រើប្រាស់",
@@ -166,15 +166,17 @@ export const translations: Record<Language, Record<string, string>> = {
     "users.role": "តួនាទី",
     "users.permissionsMode": "ទម្រង់កំណត់សិទ្ធិ",
     "users.roleDefault": "ប្រើសិទ្ធិតាម Role",
-    "users.individual": "កំណត់សិទ្ធិបុគ្គល (Custom)",
+    "users.individual": "កំណត់សិទ្ធិបុគ្គល",
     "users.password": "ពាក្យសម្ងាត់",
     "users.leaveBlankPassword": "ទុកឱ្យនៅទំនេរបើមិនចង់ផ្លាស់ប្តូរពាក្យសម្ងាត់",
     "users.selectAll": "ជ្រើសរើសទាំងអស់",
     "users.clearAll": "សម្អាតទាំងអស់",
     "users.allowedPages": "ទំព័រដែលអាចចូលមើលបាន",
+    "users.you": "អ្នក",
+    "users.pages": "ទំព័រ",
 
     // Roles Management
-    "roles.title": "គ្រប់គ្រងតួនាទី & សិទ្ធិ",
+    "roles.title": "តួនាទី & សិទ្ធិ",
     "roles.subtitle": "កំណត់សិទ្ធិចូលមើលទំព័រលំនាំដើមសម្រាប់តួនាទីនីមួយៗ",
     "roles.savePermissions": "រក្សាទុកសិទ្ធិ",
 
@@ -590,6 +592,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "users.selectAll": "Select All",
     "users.clearAll": "Clear All",
     "users.allowedPages": "Accessible Pages",
+    "users.you": "You",
+    "users.pages": "pages",
 
     // Roles Management
     "roles.title": "Roles & Permissions",
