@@ -141,18 +141,13 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
             {/* Top Company & Invoice Header */}
             <div className="flex justify-between items-start pb-6 border-b-2 border-slate-200 gap-4">
               <div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
-                    ☕
-                  </div>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 uppercase">
-                      {settings?.storeName || "Coffee System"}
-                    </h1>
-                    <p className="text-xs text-indigo-600 font-semibold tracking-wide">
-                      POS & INVENTORY MANAGEMENT SYSTEM
-                    </p>
-                  </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 uppercase">
+                    {settings?.storeName || "Coffee System"}
+                  </h1>
+                  <p className="text-xs text-indigo-600 font-semibold tracking-wide">
+                    POS & INVENTORY MANAGEMENT SYSTEM
+                  </p>
                 </div>
                 <p className="text-xs text-slate-500 mt-2 max-w-xs leading-relaxed">
                   📍 {settings?.storeAddress || "Phnom Penh, Cambodia"}
