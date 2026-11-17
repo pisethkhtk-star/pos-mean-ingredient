@@ -373,6 +373,7 @@ export default function PurchasesPage() {
                     t("purchases.status"),
                     t("purchases.colSupplier"),
                     t("purchases.colItems"),
+                    t("purchases.colQty"),
                     t("purchases.colTotal"),
                     t("purchases.note"),
                     t("purchases.colCreatedBy"),
@@ -430,12 +431,11 @@ export default function PurchasesPage() {
                               const name = isProduct
                                 ? (item.product?.name || `Product #${item.productId}`)
                                 : (item.ingredient?.name || `Ingredient #${item.ingredientId}`);
-                              const unit = isProduct ? "pcs" : (item.ingredient?.unit || "unit");
 
                               return (
-                                <div key={idx} className="text-xs flex items-center gap-1.5 flex-wrap">
+                                <div key={idx} className="text-xs flex items-center gap-1.5 min-h-[22px]">
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
                                       isProduct
                                         ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
                                         : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
@@ -443,11 +443,28 @@ export default function PurchasesPage() {
                                   >
                                     {isProduct ? "Product" : "Ingredient"}
                                   </span>
-                                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                  <span className="font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                                     {name}
                                   </span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        <div className="space-y-1.5">
+                          {p.items && p.items.length > 0 ? (
+                            p.items.map((item, idx) => {
+                              const isProduct = !!item.product || !!item.productId;
+                              const unit = isProduct ? "pcs" : (item.ingredient?.unit || "unit");
+
+                              return (
+                                <div key={idx} className="text-xs flex items-center min-h-[22px]">
                                   <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">
-                                    : {Number(item.quantity)} {unit}
+                                    {Number(item.quantity)} {unit}
                                   </span>
                                 </div>
                               );
