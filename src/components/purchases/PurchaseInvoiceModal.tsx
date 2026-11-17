@@ -87,8 +87,8 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto">
-      {/* Global Print Style for foolproof printing */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 overflow-hidden print:opacity-100 print:pointer-events-auto print:static">
+      {/* Global Print Style for foolproof direct printing */}
       <style jsx global>{`
         @media print {
           body {
@@ -101,6 +101,7 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
           #print-purchase-invoice,
           #print-purchase-invoice * {
             visibility: visible !important;
+            opacity: 1 !important;
           }
           #print-purchase-invoice {
             position: absolute !important;
@@ -115,49 +116,19 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
             border: none !important;
             max-width: 100% !important;
           }
+          #print-purchase-invoice table,
+          #print-purchase-invoice tr {
+            page-break-inside: avoid;
+          }
         }
       `}</style>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Screen Controls Header (Hidden in Print) */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shrink-0 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
-              <ReceiptText size={20} />
-            </div>
-            <div>
-              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
-                {t("purchases.invoiceTitle") || "Purchase Order Invoice"}
-              </h2>
-              <span className="font-mono text-xs text-slate-500 font-semibold">
-                #{purchase.reference}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
-            >
-              <Printer size={15} />
-              <span>{t("purchases.printInvoice") || "Print Invoice"}</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Scrollable Document Area */}
-        <div className="overflow-y-auto p-4 sm:p-6 md:p-8 flex-1 bg-slate-100 dark:bg-slate-950 flex justify-center">
-          {/* Printable Invoice Sheet */}
-          <div
-            id="print-purchase-invoice"
-            className="w-full max-w-3xl bg-white text-slate-900 p-8 sm:p-10 rounded-2xl shadow border border-slate-200 text-sm font-sans flex flex-col"
-          >
+      <div className="w-full max-w-4xl flex flex-col justify-center items-center print:max-w-none">
+        {/* Printable Invoice Sheet */}
+        <div
+          id="print-purchase-invoice"
+          className="w-full max-w-3xl bg-white text-slate-900 p-8 sm:p-10 rounded-2xl shadow border border-slate-200 text-sm font-sans flex flex-col mx-auto"
+        >
             {/* Top Company & Invoice Header */}
             <div className="flex justify-between items-start pb-6 border-b-2 border-slate-200 gap-4">
               <div>
@@ -392,26 +363,6 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
             </div>
           </div>
         </div>
-
-        {/* Modal Footer (Screen View) */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 shrink-0 bg-white dark:bg-slate-900 print:hidden">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-          >
-            {t("common.close") || "Close"}
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
-          >
-            <Printer size={15} />
-            <span>{t("purchases.printInvoice") || "Print Invoice"}</span>
-          </button>
-        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
