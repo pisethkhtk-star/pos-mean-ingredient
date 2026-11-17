@@ -63,6 +63,7 @@ export default function OrdersPage() {
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchOrders = useCallback(async (pageToFetch = currentPage) => {
@@ -171,14 +172,16 @@ export default function OrdersPage() {
     }
   };
 
-  const exportToCSV = async () => {
+  const exportToExcel = async () => {
     try {
+      setExporting(true);
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (statusFilter !== "ALL") params.set("status", statusFilter);
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
-      // Fetch full set without page limit for complete export
+
+      // Fetch full order dataset without pagination limit
       const res = await fetch(`/api/orders?${params}`);
       let exportData: Order[] = orders;
       if (res.ok) {
@@ -186,37 +189,200 @@ export default function OrdersPage() {
         exportData = Array.isArray(raw) ? raw : (raw.content || orders);
       }
 
-      const headers = ["Order #", "Customer", "Cashier", "Payment Method", "Items Count", "Subtotal", "Discount", "Tax", "Total", "Status", "Date", "Note"];
-      const csvRows = [headers.join(",")];
-      
-      exportData.forEach(o => {
-        const row = [
-          o.orderNumber,
-          `"${o.customer?.name || 'Walk-in'}"`,
-          `"${o.user.name}"`,
-          o.paymentMethod.replace("_", " "),
-          o.items.length,
-          o.subtotal,
-          o.discount,
-          o.tax,
-          o.total,
-          o.status,
-          new Date(o.createdAt).toLocaleDateString(),
-          `"${(o.note || "").replace(/"/g, '""')}"`
-        ];
-        csvRows.push(row.join(","));
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Coffee POS System";
+      workbook.lastModifiedBy = "Admin";
+      workbook.created = new Date();
+      workbook.modified = new Date();
+
+      const ws = workbook.addWorksheet("Orders", {
+        views: [{ showGridLines: true }],
+        pageSetup: { orientation: "landscape", paperSize: 9 },
       });
-      
-      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
+
+      // Calculate totals for summary banner
+      const totalRev = exportData
+        .filter((o) => o.status === "COMPLETED")
+        .reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+      // 1. Top Title Banner (Rows 1-2)
+      ws.mergeCells("A1:L2");
+      const titleCell = ws.getCell("A1");
+      titleCell.value = "COFFEE POS SYSTEM - ORDERS REPORT (បញ្ជីវិក្កយបត្របញ្ជាទិញ)";
+      titleCell.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      // 2. Subtitle / Metadata (Row 3)
+      ws.mergeCells("A3:L3");
+      const subCell = ws.getCell("A3");
+      const dateRangeText = startDate || endDate ? `${startDate || "All"} ដល់ ${endDate || "All"}` : "All Time";
+      const statusText = statusFilter !== "ALL" ? statusFilter : "All Statuses";
+      subCell.value = `កាលបរិច្ឆេទបង្កើត: ${new Date().toLocaleString()}  |  ស្ថានភាព: ${statusText}  |  កាលបរិច្ឆេទ: ${dateRangeText}  |  ចំនួនវិក្កយបត្រ: ${exportData.length}  |  ចំណូលសរុប (Completed): $${totalRev.toFixed(2)}`;
+      subCell.font = { name: "Arial", size: 9.5, italic: true, color: { argb: "FF334155" } };
+      subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
+      subCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      // Row 4 spacer
+      ws.getRow(4).height = 8;
+
+      // 3. Prepare rows data
+      const rowsData = exportData.map((o) => [
+        o.orderNumber || "",
+        o.customer?.name || "Walk-in",
+        o.user?.name || "N/A",
+        (o.paymentMethod || "").replace(/_/g, " "),
+        o.items ? o.items.length : 0,
+        Number(o.subtotal || 0),
+        Number(o.discount || 0),
+        Number(o.tax || 0),
+        Number(o.total || 0),
+        o.status || "",
+        o.createdAt ? new Date(o.createdAt).toLocaleString() : "",
+        o.note || "",
+      ]);
+
+      // 4. Native Excel Table with built-in styling, AutoFilter, and Totals
+      ws.addTable({
+        name: "OrdersReportTable",
+        ref: "A5",
+        headerRow: true,
+        totalsRow: true,
+        style: {
+          theme: "TableStyleMedium9",
+          showRowStripes: true,
+        },
+        columns: [
+          { name: "Order #", totalsRowLabel: "សរុប (TOTAL):", filterButton: true },
+          { name: "Customer", filterButton: true },
+          { name: "Cashier", filterButton: true },
+          { name: "Payment Method", filterButton: true },
+          { name: "Items Count", totalsRowFunction: "sum", filterButton: true },
+          { name: "Subtotal ($)", totalsRowFunction: "sum", filterButton: true },
+          { name: "Discount ($)", totalsRowFunction: "sum", filterButton: true },
+          { name: "Tax ($)", totalsRowFunction: "sum", filterButton: true },
+          { name: "Total Amount ($)", totalsRowFunction: "sum", filterButton: true },
+          { name: "Status", filterButton: true },
+          { name: "Date & Time", filterButton: true },
+          { name: "Note", filterButton: true },
+        ],
+        rows: rowsData,
+      });
+
+      // 5. Proportional Column Widths
+      ws.columns = [
+        { width: 22 }, // Order #
+        { width: 20 }, // Customer
+        { width: 18 }, // Cashier
+        { width: 18 }, // Payment Method
+        { width: 14 }, // Items Count
+        { width: 16 }, // Subtotal ($)
+        { width: 15 }, // Discount ($)
+        { width: 14 }, // Tax ($)
+        { width: 18 }, // Total Amount ($)
+        { width: 16 }, // Status
+        { width: 22 }, // Date & Time
+        { width: 26 }, // Note
+      ];
+
+      // 6. Header Row formatting
+      const headerRow = ws.getRow(5);
+      headerRow.height = 28;
+      headerRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+
+      const thinBorder: any = {
+        top: { style: "thin", color: { argb: "FFCBD5E1" } },
+        left: { style: "thin", color: { argb: "FFCBD5E1" } },
+        bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+        right: { style: "thin", color: { argb: "FFCBD5E1" } },
+      };
+
+      // 7. Format Data Rows
+      rowsData.forEach((_, i) => {
+        const r = ws.getRow(6 + i);
+        r.height = 22;
+        r.font = { name: "Arial", size: 9.5 };
+
+        r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(2).alignment = { vertical: "middle", horizontal: "left" };
+        r.getCell(3).alignment = { vertical: "middle", horizontal: "left" };
+        r.getCell(4).alignment = { vertical: "middle", horizontal: "center" };
+
+        r.getCell(5).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(5).numFmt = "#,##0";
+
+        [6, 7, 8, 9].forEach((col) => {
+          r.getCell(col).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(col).numFmt = '"$"#,##0.00';
+        });
+
+        const statusCell = r.getCell(10);
+        statusCell.alignment = { vertical: "middle", horizontal: "center" };
+        const st = String(statusCell.value).toUpperCase();
+        if (st === "COMPLETED") {
+          statusCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF059669" } };
+        } else if (st === "PENDING") {
+          statusCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFD97706" } };
+        } else if (st === "DELETED" || st === "CANCELLED") {
+          statusCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFE11D48" } };
+        } else if (st === "REFUNDED") {
+          statusCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF7C3AED" } };
+        }
+
+        r.getCell(11).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(12).alignment = { vertical: "middle", horizontal: "left" };
+
+        for (let c = 1; c <= 12; c++) {
+          r.getCell(c).border = thinBorder;
+        }
+      });
+
+      // 8. Format Totals Row
+      const totRowIndex = 5 + rowsData.length + 1;
+      const totRow = ws.getRow(totRowIndex);
+      totRow.height = 26;
+      totRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF0F172A" } };
+      totRow.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+      totRow.getCell(5).alignment = { vertical: "middle", horizontal: "center" };
+      totRow.getCell(5).numFmt = "#,##0";
+      [6, 7, 8, 9].forEach((col) => {
+        totRow.getCell(col).alignment = { vertical: "middle", horizontal: "right" };
+        totRow.getCell(col).numFmt = '"$"#,##0.00';
+      });
+
+      const doubleBottomBorder: any = {
+        top: { style: "thin", color: { argb: "FF94A3B8" } },
+        bottom: { style: "double", color: { argb: "FF1E293B" } },
+        left: { style: "thin", color: { argb: "FFCBD5E1" } },
+        right: { style: "thin", color: { argb: "FFCBD5E1" } },
+      };
+      for (let c = 1; c <= 12; c++) {
+        totRow.getCell(c).border = doubleBottomBorder;
+        totRow.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
+      }
+
+      // 9. Generate Native XLSX Buffer and Download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `orders_export_${new Date().getTime()}.csv`);
+      const dateStr = new Date().toISOString().split("T")[0];
+      link.setAttribute("download", `orders_table_export_${dateStr}_${Date.now()}.xlsx`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setToastMessage({ type: "success", text: t("orders.exportSuccess") || "បានទាញយកឯកសារ Excel ដោយជោគជ័យ!" });
     } catch (err) {
       console.error("Export error:", err);
+      setToastMessage({ type: "error", text: "មានបញ្ហាក្នុងការទាញយក Excel សូមព្យាយាមម្តងទៀត" });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -255,9 +421,13 @@ export default function OrdersPage() {
           </h1>
           <p className="text-sm text-slate-500 mt-1.5">{totalElements} {t("orders.orderCount")} · {t("orders.revenue")}: ${overallRevenue.toFixed(2)}</p>
         </div>
-        <button onClick={exportToCSV} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer">
-          <Download size={16} />
-          {t("orders.exportExcel")}
+        <button 
+          onClick={exportToExcel} 
+          disabled={exporting}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+        >
+          {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          {exporting ? (t("orders.exporting") || "កំពុងទាញយក...") : t("orders.exportExcel")}
         </button>
       </div>
 
