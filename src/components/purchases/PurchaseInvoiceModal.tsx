@@ -51,6 +51,26 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
     }
   }, [settings, fetchSettings]);
 
+  // Automatically trigger print dialog directly, skipping intermediate manual click
+  useEffect(() => {
+    if (!purchase) return;
+
+    const timer = setTimeout(() => {
+      window.print();
+    }, 120);
+
+    const handleAfterPrint = () => {
+      onClose();
+    };
+
+    window.addEventListener("afterprint", handleAfterPrint);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [purchase, onClose]);
+
   if (!purchase) return null;
 
   const handlePrint = () => {
