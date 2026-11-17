@@ -144,7 +144,11 @@ function ReceiveStockContent() {
       (p) =>
         p.reference.toLowerCase().includes(q) ||
         p.supplier?.name.toLowerCase().includes(q) ||
-        (p.note && p.note.toLowerCase().includes(q))
+        (p.note && p.note.toLowerCase().includes(q)) ||
+        p.items?.some((i) =>
+          (i.product?.name && i.product.name.toLowerCase().includes(q)) ||
+          (i.ingredient?.name && i.ingredient.name.toLowerCase().includes(q))
+        )
     );
   }, [activeTab, pendingPurchases, receivedPurchases, searchQuery]);
 
@@ -362,201 +366,189 @@ function ReceiveStockContent() {
         </div>
       </div>
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="flex items-center justify-center h-56 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <Loader2 className="animate-spin text-emerald-600" size={32} />
-        </div>
-      ) : displayedPurchases.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-56 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-slate-400 gap-3">
-          <Warehouse size={40} className="opacity-40" />
-          <p className="text-sm font-medium">
-            {activeTab === "TO_RECEIVE"
-              ? t("receiveStock.noPendingOrders")
-              : t("receiveStock.noReceivedOrders")}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {displayedPurchases.map((purchase) => {
-            const isPending = (purchase.status || "RECEIVED") === "PENDING";
-            return (
-              <div
-                key={purchase.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-5 hover:border-emerald-300 dark:hover:border-emerald-800 transition-all"
-              >
-                {/* Order Top Bar */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => setPrintingPurchase(purchase)}
-                      className="font-mono text-base font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer text-left"
-                      title={t("purchases.printInvoice")}
+      {/* Main Content Area - Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="animate-spin text-emerald-600" size={28} />
+          </div>
+        ) : displayedPurchases.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
+            <Warehouse size={36} className="opacity-40" />
+            <p className="text-sm font-medium">
+              {activeTab === "TO_RECEIVE"
+                ? t("receiveStock.noPendingOrders")
+                : t("receiveStock.noReceivedOrders")}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+                  {[
+                    t("purchases.colRef"),
+                    t("purchases.status"),
+                    t("purchases.colSupplier"),
+                    t("purchases.colItems"),
+                    t("purchases.colQty"),
+                    t("purchases.colTotal"),
+                    t("purchases.note"),
+                    t("purchases.colCreatedBy"),
+                    t("purchases.colDate"),
+                    t("common.actions") || "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
                     >
-                      {purchase.reference}
-                    </button>
-                    {isPending ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                        <Clock size={12} /> {t("purchases.statusPending")}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                        <CheckCircle2 size={12} /> {t("purchases.statusReceived")}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                      <Truck size={14} className="text-slate-400" />
-                      <strong className="text-slate-700 dark:text-slate-300">
-                        {purchase.supplier?.name}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {/* Actions for this PO */}
-                  <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
-                    {/* Print / View Invoice Button */}
-                    <button
-                      type="button"
-                      onClick={() => setPrintingPurchase(purchase)}
-                      title={t("purchases.printInvoice")}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {displayedPurchases.map((purchase) => {
+                  const isPending = (purchase.status || "RECEIVED") === "PENDING";
+                  return (
+                    <tr
+                      key={purchase.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <Printer size={13} className="text-indigo-600 dark:text-indigo-400" />
-                      <span>{t("purchases.viewInvoice")}</span>
-                    </button>
-
-                    {isPending ? (
-                      <>
+                      <td className="px-4 py-3">
                         <button
-                          onClick={() => setCancellingPurchase(purchase)}
-                          className="px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                          type="button"
+                          onClick={() => setPrintingPurchase(purchase)}
+                          className="font-mono font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer text-left"
+                          title={t("purchases.printInvoice")}
                         >
-                          <Ban size={14} className="inline mr-1" />
-                          {t("receiveStock.cancelOrder")}
+                          {purchase.reference}
                         </button>
-                        <button
-                          onClick={() => handleQuickReceive(purchase)}
-                          className="px-3.5 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-                        >
-                          {t("receiveStock.quickReceive")}
-                        </button>
-                        <button
-                          onClick={() => openReceiveModal(purchase)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
-                        >
-                          <PackagePlus size={14} />
-                          {t("receiveStock.reviewAndReceive")}
-                        </button>
-                      </>
-                    ) : (
-                      <div className="text-right text-xs text-slate-500 pl-2">
-                        <p>
-                          <span className="font-semibold">{t("receiveStock.receivedAt")}:</span>{" "}
-                          {purchase.receivedAt
-                            ? new Date(purchase.receivedAt).toLocaleDateString()
-                            : new Date(purchase.createdAt).toLocaleDateString()}
-                        </p>
-                        {purchase.receivedBy && (
-                          <p>
-                            <span className="font-semibold">{t("receiveStock.receivedBy")}:</span>{" "}
-                            {purchase.receivedBy.name}
-                          </p>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isPending ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            <Clock size={12} /> {t("purchases.statusPending")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <CheckCircle2 size={12} /> {t("purchases.statusReceived")}
+                          </span>
                         )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Items Grid/List */}
-                <div className="pt-4">
-                  <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-2">
-                    {t("receiveStock.itemDetails")} ({purchase.items.length})
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {purchase.items.map((item, idx) => {
-                      const isProduct = !!item.product || !!item.productId;
-                      const name = isProduct
-                        ? item.product?.name || `Product #${item.productId}`
-                        : item.ingredient?.name || `Ingredient #${item.ingredientId}`;
-                      const code = isProduct ? item.product?.code : item.ingredient?.code;
-                      const unit = isProduct ? "pcs" : item.ingredient?.unit || "unit";
-
-                      return (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60 text-xs"
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${isProduct
-                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                                  : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300"
-                                  }`}
-                              >
-                                {isProduct ? "Product" : "Ingredient"}
-                              </span>
-                              <strong className="text-slate-800 dark:text-slate-200 text-sm">
-                                {name}
-                              </strong>
-                            </div>
-                            <p className="text-slate-500 font-mono">
-                              {Number(item.quantity)} {unit}  $
-                              {Number(item.cost).toFixed(4)}/{unit}
-                            </p>
-                            {item.expiryDate ? (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
-                                <Calendar size={11} />
-                                <span>{t("purchases.expiryDate")}: <strong>{item.expiryDate}</strong></span>
-                              </div>
-                            ) : (
-                              <span className="text-[11px] text-slate-400 italic">
-                                {t("purchases.noExpiry")}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-right pl-3 shrink-0">
-                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                              ${Number(item.subtotal).toFixed(2)}
-                            </span>
-                          </div>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Truck size={14} className="text-slate-400" />
+                          {purchase.supplier?.name}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                        <div className="space-y-1.5">
+                          {purchase.items && purchase.items.length > 0 ? (
+                            purchase.items.map((item, idx) => {
+                              const isProduct = !!item.product || !!item.productId;
+                              const name = isProduct
+                                ? item.product?.name || `Product #${item.productId}`
+                                : item.ingredient?.name || `Ingredient #${item.ingredientId}`;
 
-                {/* Bottom Order Info */}
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-500 gap-2">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <span>
-                      <strong>{t("purchases.colDate")}:</strong>{" "}
-                      {new Date(purchase.createdAt).toLocaleDateString()}
-                    </span>
-                    <span>
-                      <strong>{t("purchases.colCreatedBy")}:</strong> {purchase.user?.name}
-                    </span>
-                    {purchase.note && (
-                      <span className="italic">
-                        <strong>{t("purchases.note")}:</strong> {purchase.note}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <span className="text-slate-400 uppercase font-semibold mr-1">
-                      {t("purchases.colTotal")}:
-                    </span>
-                    <strong className="text-base text-slate-900 dark:text-slate-100">
-                      ${Number(purchase.totalAmount).toFixed(2)}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                              return (
+                                <div key={idx} className="text-xs flex items-center min-h-[22px]">
+                                  <span className="font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                    {name}
+                                  </span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        <div className="space-y-1.5">
+                          {purchase.items && purchase.items.length > 0 ? (
+                            purchase.items.map((item, idx) => {
+                              const isProduct = !!item.product || !!item.productId;
+                              const unit = isProduct ? "pcs" : item.ingredient?.unit || "unit";
+
+                              return (
+                                <div key={idx} className="text-xs flex items-center min-h-[22px]">
+                                  <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">
+                                    {Number(item.quantity)} {unit}
+                                  </span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        ${Number(purchase.totalAmount).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 max-w-[200px] truncate">
+                        {purchase.note || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                        {purchase.user?.name}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                        {new Date(purchase.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Print / View Invoice Button */}
+                          <button
+                            type="button"
+                            onClick={() => setPrintingPurchase(purchase)}
+                            title={t("purchases.printInvoice")}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Printer size={13} className="text-indigo-600 dark:text-indigo-400" />
+                            <span>{t("purchases.viewInvoice")}</span>
+                          </button>
+
+                          {/* Receive Stock Actions */}
+                          {isPending && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openReceiveModal(purchase)}
+                                title={t("receiveStock.reviewAndReceive")}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                              >
+                                <PackagePlus size={13} />
+                                <span>{t("purchases.receiveStockBtn")}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickReceive(purchase)}
+                                title={t("receiveStock.quickReceive")}
+                                className="p-1.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium cursor-pointer"
+                              >
+                                <Check size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCancellingPurchase(purchase)}
+                                title={t("receiveStock.cancelOrder")}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg text-xs font-medium cursor-pointer"
+                              >
+                                <Ban size={13} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Review & Receive Modal */}
       {selectedPurchase && (
