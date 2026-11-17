@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLanguageStore } from "@/store/languageStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { Calendar, Truck, CheckCircle2, Clock, Ban } from "lucide-react";
@@ -44,6 +45,11 @@ interface PurchaseInvoiceModalProps {
 export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvoiceModalProps) {
   const { t } = useLanguageStore();
   const { settings, fetchSettings } = useSettingsStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!settings) {
@@ -51,13 +57,13 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
     }
   }, [settings, fetchSettings]);
 
-  // Automatically trigger print dialog directly, skipping intermediate manual click
+  // Automatically trigger print dialog directly once mounted
   useEffect(() => {
-    if (!purchase) return;
+    if (!purchase || !mounted) return;
 
     const timer = setTimeout(() => {
       window.print();
-    }, 120);
+    }, 150);
 
     const handleAfterPrint = () => {
       onClose();
@@ -69,9 +75,9 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
       clearTimeout(timer);
       window.removeEventListener("afterprint", handleAfterPrint);
     };
-  }, [purchase, onClose]);
+  }, [purchase, mounted, onClose]);
 
-  if (!purchase) return null;
+  if (!purchase || !mounted) return null;
 
   const status = purchase.status || "RECEIVED";
   const isPending = status === "PENDING";
@@ -82,23 +88,25 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
     0
   );
 
-  return (
+  return createPortal(
     <div
       id="purchase-invoice-modal-root"
-      className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 overflow-hidden print:opacity-100 print:pointer-events-auto print:static print:overflow-visible print:w-full print:h-auto print:p-0 print:m-0"
+      className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 overflow-hidden print:opacity-100 print:pointer-events-auto print:p-0 print:m-0"
     >
-      {/* Global Print Style for foolproof direct printing & free size responsiveness */}
+      {/* Global Print Style for foolproof direct printing & free size responsiveness across all paper sizes */}
       <style jsx global>{`
         @media print {
           @page {
             size: auto;
-            margin: 8mm 10mm;
+            margin: 6mm 8mm;
           }
           *, *::before, *::after {
             box-sizing: border-box !important;
           }
           html, body {
             width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -117,20 +125,26 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
             opacity: 1 !important;
           }
           #purchase-invoice-modal-root {
-            position: static !important;
-            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 100% !important;
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
-            pointer-events: auto !important;
+            display: block !important;
+            background: #ffffff !important;
+            z-index: 999999 !important;
           }
           #purchase-invoice-modal-wrapper {
             position: static !important;
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
           }
@@ -140,7 +154,7 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
             width: 100% !important;
             max-width: 100% !important;
             min-width: 100% !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
             color: #000000 !important;
@@ -150,6 +164,7 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
           }
           #print-purchase-invoice table {
             width: 100% !important;
+            min-width: 100% !important;
             max-width: 100% !important;
             table-layout: auto !important;
             border-collapse: collapse !important;
@@ -163,12 +178,12 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
 
       <div
         id="purchase-invoice-modal-wrapper"
-        className="w-full max-w-4xl flex flex-col justify-center items-center print:w-full print:max-w-none print:m-0 print:p-0"
+        className="w-full flex flex-col justify-center items-center print:w-full print:m-0 print:p-0"
       >
         {/* Printable Invoice Sheet */}
         <div
           id="print-purchase-invoice"
-          className="w-full max-w-3xl bg-white text-slate-900 p-8 sm:p-10 rounded-2xl shadow border border-slate-200 text-sm font-sans flex flex-col mx-auto print:w-full print:max-w-none print:p-0 print:shadow-none print:border-none print:rounded-none"
+          className="w-full max-w-4xl bg-white text-slate-900 p-8 sm:p-10 rounded-2xl shadow border border-slate-200 text-sm font-sans flex flex-col mx-auto print:w-full print:max-w-none print:p-0 print:shadow-none print:border-none print:rounded-none"
         >
           {/* Top Company & Invoice Header */}
           <div className="flex justify-between items-start pb-5 border-b-2 border-slate-200 gap-4">
@@ -273,13 +288,13 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-slate-300 bg-slate-50 text-slate-700 font-semibold">
-                  <th className="py-2 px-2 text-center w-[5%] whitespace-nowrap">#</th>
-                  <th className="py-2 px-2 text-left w-[35%]">{t("purchases.colItems") || "Items"}</th>
-                  <th className="py-2 px-2 text-left w-[13%] whitespace-nowrap">{t("purchases.itemType") || "Type"}</th>
-                  <th className="py-2 px-2 text-left w-[17%] whitespace-nowrap">{t("purchases.expiryDate") || "Expiry Date"}</th>
+                  <th className="py-2 px-2 text-center w-[4%] whitespace-nowrap">#</th>
+                  <th className="py-2 px-2 text-left w-[36%]">{t("purchases.colItems") || "Items"}</th>
+                  <th className="py-2 px-2 text-left w-[12%] whitespace-nowrap">{t("purchases.itemType") || "Type"}</th>
+                  <th className="py-2 px-2 text-left w-[16%] whitespace-nowrap">{t("purchases.expiryDate") || "Expiry Date"}</th>
                   <th className="py-2 px-2 text-center w-[10%] whitespace-nowrap">{t("products.quantity") || "Qty"}</th>
-                  <th className="py-2 px-2 text-right w-[10%] whitespace-nowrap">{t("ingredients.colUnitCost") || "Unit Cost ($)"}</th>
-                  <th className="py-2 px-2 text-right w-[10%] whitespace-nowrap">{t("pos.subtotal") || "Subtotal"}</th>
+                  <th className="py-2 px-2 text-right w-[11%] whitespace-nowrap">{t("ingredients.colUnitCost") || "Unit Cost ($)"}</th>
+                  <th className="py-2 px-2 text-right w-[11%] whitespace-nowrap">{t("pos.subtotal") || "Subtotal"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -404,6 +419,7 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
