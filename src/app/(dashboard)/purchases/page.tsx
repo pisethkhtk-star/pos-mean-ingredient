@@ -457,7 +457,7 @@ export default function PurchasesPage() {
                       <td className="px-4 py-3 text-slate-400 text-xs">{new Date(p.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          {/* Print Invoice Button */}
+                          {/* Print / View Invoice Button */}
                           <button
                             type="button"
                             onClick={() => setPrintingPurchase(p)}
@@ -465,7 +465,7 @@ export default function PurchasesPage() {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                           >
                             <Printer size={13} className="text-indigo-600 dark:text-indigo-400" />
-                            <span>{t("purchases.printInvoice")}</span>
+                            <span>{t("purchases.viewInvoice")}</span>
                           </button>
 
                           {/* If PENDING, show Receive actions */}
