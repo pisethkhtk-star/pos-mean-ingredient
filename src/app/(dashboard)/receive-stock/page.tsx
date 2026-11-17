@@ -415,7 +415,7 @@ function ReceiveStockContent() {
 
                   {/* Actions for this PO */}
                   <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
-                    {/* Print / View Invoice Button */}
+                    {/* Print Invoice Button */}
                     <button
                       type="button"
                       onClick={() => setPrintingPurchase(purchase)}
@@ -423,7 +423,7 @@ function ReceiveStockContent() {
                       className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                     >
                       <Printer size={13} className="text-indigo-600 dark:text-indigo-400" />
-                      <span>{t("purchases.viewInvoice")}</span>
+                      <span>{t("purchases.printInvoice")}</span>
                     </button>
 
                     {isPending ? (
