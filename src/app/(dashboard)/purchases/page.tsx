@@ -424,29 +424,37 @@ export default function PurchasesPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                         <div className="space-y-1.5">
-                          {p.items.map((item, idx) => {
-                            const isProduct = !!item.product || !!item.productId;
-                            const name = isProduct
-                              ? (item.product?.name || `Product #${item.productId}`)
-                              : (item.ingredient?.name || `Ingredient #${item.ingredientId}`);
-                            const unit = isProduct ? "pcs" : (item.ingredient?.unit || "unit");
-                            return (
-                              <div key={idx} className="text-xs flex items-center gap-1.5 flex-wrap">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isProduct
-                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                  : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
-                                  }`}>
-                                  {isProduct ? "Product" : "Ingredient"}
-                                </span>
-                                <strong className="text-slate-800 dark:text-slate-200">{name}</strong>: {Number(item.quantity)} {unit} @ ${Number(item.cost).toFixed(4)}/{unit}
-                                {item.expiryDate && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900 text-[10px] font-medium">
-                                    <Calendar size={10} /> Exp: {item.expiryDate}
+                          {p.items && p.items.length > 0 ? (
+                            p.items.map((item, idx) => {
+                              const isProduct = !!item.product || !!item.productId;
+                              const name = isProduct
+                                ? (item.product?.name || `Product #${item.productId}`)
+                                : (item.ingredient?.name || `Ingredient #${item.ingredientId}`);
+                              const unit = isProduct ? "pcs" : (item.ingredient?.unit || "unit");
+
+                              return (
+                                <div key={idx} className="text-xs flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      isProduct
+                                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                        : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                                    }`}
+                                  >
+                                    {isProduct ? "Product" : "Ingredient"}
                                   </span>
-                                )}
-                              </div>
-                            );
-                          })}
+                                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                    {name}
+                                  </span>
+                                  <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">
+                                    : {Number(item.quantity)} {unit}
+                                  </span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">-</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">
