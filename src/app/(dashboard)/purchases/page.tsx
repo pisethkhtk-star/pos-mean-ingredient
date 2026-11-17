@@ -433,16 +433,7 @@ export default function PurchasesPage() {
                                 : (item.ingredient?.name || `Ingredient #${item.ingredientId}`);
 
                               return (
-                                <div key={idx} className="text-xs flex items-center gap-1.5 min-h-[22px]">
-                                  <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                                      isProduct
-                                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                        : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
-                                    }`}
-                                  >
-                                    {isProduct ? "Product" : "Ingredient"}
-                                  </span>
+                                <div key={idx} className="text-xs flex items-center min-h-[22px]">
                                   <span className="font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                                     {name}
                                   </span>
