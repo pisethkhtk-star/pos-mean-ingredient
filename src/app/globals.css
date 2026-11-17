@@ -52,16 +52,22 @@ html[lang="en"] * {
 
 /* Custom print styles for the thermal receipt simulation and purchase invoice */
 @media print {
-  body {
+  @page {
+    size: auto;
+    margin: 8mm 10mm;
+  }
+  *, *::before, *::after {
+    box-sizing: border-box !important;
+  }
+  html, body, #__next {
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
     background: #ffffff !important;
     color: #000000 !important;
   }
   body * {
     visibility: hidden;
-  }
-  html, body, #__next {
-    overflow: visible !important;
-    height: auto !important;
   }
 
   #print-receipt-section, #print-receipt-section * {
@@ -76,20 +82,49 @@ html[lang="en"] * {
     padding: 0;
   }
 
-  #print-purchase-invoice, #print-purchase-invoice * {
-    visibility: visible;
+  #purchase-invoice-modal-root,
+  #purchase-invoice-modal-root *,
+  #print-purchase-invoice,
+  #print-purchase-invoice * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  #purchase-invoice-modal-root {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  #purchase-invoice-modal-wrapper {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   #print-purchase-invoice {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 24px;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
     box-shadow: none !important;
     border: none !important;
+    overflow: visible !important;
+  }
+  #print-purchase-invoice table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
   }
   #print-purchase-invoice table,
   #print-purchase-invoice tr {
