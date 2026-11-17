@@ -243,13 +243,13 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b-2 border-slate-300 bg-slate-50 text-slate-700 font-semibold">
-                    <th className="py-2.5 px-3 text-left w-8">#</th>
+                    <th className="py-2.5 px-3 text-left w-8 whitespace-nowrap">#</th>
                     <th className="py-2.5 px-3 text-left">{t("purchases.colItems") || "Items"}</th>
-                    <th className="py-2.5 px-3 text-left w-24">{t("purchases.itemType") || "Type"}</th>
-                    <th className="py-2.5 px-3 text-left w-28">{t("purchases.expiryDate") || "Expiry Date"}</th>
-                    <th className="py-2.5 px-3 text-center w-20">{t("products.quantity") || "Qty"}</th>
-                    <th className="py-2.5 px-3 text-right w-24">{t("ingredients.colUnitCost") || "Unit Cost"}</th>
-                    <th className="py-2.5 px-3 text-right w-24">{t("pos.subtotal") || "Subtotal"}</th>
+                    <th className="py-2.5 px-3 text-left w-24 whitespace-nowrap">{t("purchases.itemType") || "Type"}</th>
+                    <th className="py-2.5 px-3 text-left whitespace-nowrap min-w-[125px]">{t("purchases.expiryDate") || "Expiry Date"}</th>
+                    <th className="py-2.5 px-3 text-center w-20 whitespace-nowrap">{t("products.quantity") || "Qty"}</th>
+                    <th className="py-2.5 px-3 text-right w-24 whitespace-nowrap">{t("ingredients.colUnitCost") || "Unit Cost"}</th>
+                    <th className="py-2.5 px-3 text-right w-24 whitespace-nowrap">{t("pos.subtotal") || "Subtotal"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -263,12 +263,12 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
 
                     return (
                       <tr key={item.id || idx} className="hover:bg-slate-50/50">
-                        <td className="py-3 px-3 text-slate-400 font-mono">{idx + 1}</td>
+                        <td className="py-3 px-3 text-slate-400 font-mono whitespace-nowrap">{idx + 1}</td>
                         <td className="py-3 px-3 font-semibold text-slate-900">
                           {name}
                           {code && <span className="ml-1 text-[10px] text-slate-400 font-mono">[{code}]</span>}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               isProduct
@@ -279,22 +279,22 @@ export default function PurchaseInvoiceModal({ purchase, onClose }: PurchaseInvo
                             {isProduct ? "Product" : "Ingredient"}
                           </span>
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           {item.expiryDate ? (
-                            <span className="font-mono text-rose-700 font-semibold bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[11px]">
+                            <span className="inline-flex items-center gap-1 font-mono text-rose-700 font-semibold bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[11px] whitespace-nowrap">
                               📅 {item.expiryDate}
                             </span>
                           ) : (
                             <span className="text-slate-400 italic text-[11px]">-</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-center font-bold text-slate-800 font-mono">
+                        <td className="py-3 px-3 text-center font-bold text-slate-800 font-mono whitespace-nowrap">
                           {Number(item.quantity)} <span className="text-[10px] text-slate-500 font-normal">{unit}</span>
                         </td>
-                        <td className="py-3 px-3 text-right text-slate-700 font-mono">
+                        <td className="py-3 px-3 text-right text-slate-700 font-mono whitespace-nowrap">
                           ${Number(item.cost).toFixed(4)}
                         </td>
-                        <td className="py-3 px-3 text-right font-bold text-slate-900 font-mono">
+                        <td className="py-3 px-3 text-right font-bold text-slate-900 font-mono whitespace-nowrap">
                           ${Number(item.subtotal).toFixed(2)}
                         </td>
                       </tr>
