@@ -9,7 +9,8 @@ import {
   BarChart3, DollarSign, TrendingUp, ShoppingBag,
   Activity, Download, Printer,
   Layers, CreditCard, UserCheck,
-  Award, Calendar, Loader2, FileSpreadsheet
+  Award, Calendar, Loader2, FileSpreadsheet,
+  AlertTriangle, Clock, ShieldAlert, CheckCircle2, Package, Search
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useLanguageStore } from "@/store/languageStore";
@@ -62,6 +63,35 @@ interface ReportData {
   }[];
 }
 
+interface ExpiryItem {
+  id: string;
+  itemId: number;
+  name: string;
+  code: string;
+  type: "PRODUCT" | "INGREDIENT";
+  unit: string;
+  stock: number;
+  totalStock: number;
+  cost: number;
+  expiryDate: string | null;
+  daysRemaining: number | null;
+  status: "EXPIRED" | "EXPIRING_SOON" | "VALID";
+  batchRef: string;
+  purchaseId?: number;
+}
+
+interface ExpiryReportData {
+  summary: {
+    totalMonitored: number;
+    expiredCount: number;
+    expiringSoonCount: number;
+    validCount: number;
+    expiredValue: number;
+    expiringSoonValue: number;
+  };
+  items: ExpiryItem[];
+}
+
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#06b6d4", "#8b5cf6", "#ec4899", "#3b82f6"];
 
 const formatLocalDate = (d: Date) => {
@@ -89,9 +119,42 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PRODUCTS" | "PAYMENTS" | "CASHIERS">("OVERVIEW");
+  const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PRODUCTS" | "PAYMENTS" | "CASHIERS" | "EXPIRY">("OVERVIEW");
   const [quickFilter, setQuickFilter] = useState<"today" | "week" | "month" | "all" | "custom">("month");
   const [dateRange, setDateRange] = useState(getInitialMonthRange);
+
+  // Expiry Report States
+  const [expiryData, setExpiryData] = useState<ExpiryReportData | null>(null);
+  const [expiryLoading, setExpiryLoading] = useState(false);
+  const [expirySearch, setExpirySearch] = useState("");
+  const [expiryTypeFilter, setExpiryTypeFilter] = useState<"ALL" | "PRODUCT" | "INGREDIENT">("ALL");
+  const [expiryStatusFilter, setExpiryStatusFilter] = useState<"ALL" | "EXPIRED" | "EXPIRING_SOON" | "VALID">("ALL");
+
+  const fetchExpiryData = useCallback(async () => {
+    try {
+      setExpiryLoading(true);
+      const params = new URLSearchParams();
+      if (expirySearch) params.set("search", expirySearch);
+      if (expiryTypeFilter !== "ALL") params.set("type", expiryTypeFilter);
+      if (expiryStatusFilter !== "ALL") params.set("status", expiryStatusFilter);
+
+      const res = await fetch(`/api/reports/expiry?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setExpiryData(json);
+      }
+    } catch (e) {
+      console.error("Failed to load expiry report:", e);
+    } finally {
+      setExpiryLoading(false);
+    }
+  }, [expirySearch, expiryTypeFilter, expiryStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === "EXPIRY") {
+      fetchExpiryData();
+    }
+  }, [activeTab, fetchExpiryData]);
 
   const fetchReportData = useCallback(async () => {
     try {
@@ -631,6 +694,156 @@ export default function ReportsPage() {
     }
   };
 
+  const exportExpiryExcel = async () => {
+    if (!expiryData || !expiryData.items) return;
+    try {
+      setExporting(true);
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Coffee POS System";
+      workbook.created = new Date();
+
+      const ws = workbook.addWorksheet("Expiry_Report", {
+        views: [{ showGridLines: true }],
+        pageSetup: { orientation: "landscape", paperSize: 9 },
+      });
+
+      // Top Banner
+      ws.mergeCells("A1:L2");
+      const titleCell = ws.getCell("A1");
+      titleCell.value = "COFFEE POS - INVENTORY EXPIRY TRACKING REPORT (របាយការណ៍កាលបរិច្ឆេទផុតកំណត់)";
+      titleCell.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF991B1B" } };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      // Subtitle
+      ws.mergeCells("A3:L3");
+      const subCell = ws.getCell("A3");
+      subCell.value = `កាលបរិច្ឆេទបង្កើត: ${new Date().toLocaleString()}  |  ទំនិញតាមដានសរុប: ${expiryData.summary.totalMonitored}  |  ផុតកំណត់: ${expiryData.summary.expiredCount} ($${expiryData.summary.expiredValue.toFixed(2)})  |  ជិតផុតកំណត់: ${expiryData.summary.expiringSoonCount} ($${expiryData.summary.expiringSoonValue.toFixed(2)})`;
+      subCell.font = { name: "Arial", size: 9.5, italic: true, color: { argb: "FF334155" } };
+      subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEE2E2" } };
+      subCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      ws.getRow(4).height = 8;
+
+      const rowsData = expiryData.items.map((item, idx) => [
+        idx + 1,
+        item.name,
+        item.code,
+        item.type,
+        item.batchRef,
+        Number(item.stock),
+        item.unit,
+        Number(item.cost),
+        Math.round(Number(item.stock) * Number(item.cost) * 100) / 100,
+        item.expiryDate || "N/A",
+        item.daysRemaining != null ? item.daysRemaining : "N/A",
+        item.status === "EXPIRED" ? "EXPIRED (ផុតកំណត់)" : (item.status === "EXPIRING_SOON" ? "EXPIRING SOON (ជិតផុត)" : "VALID (សុវត្ថិភាព)")
+      ]);
+
+      ws.addTable({
+        name: "ExpiryReportTable",
+        ref: "A5",
+        headerRow: true,
+        totalsRow: true,
+        style: {
+          theme: "TableStyleMedium3",
+          showRowStripes: true,
+        },
+        columns: [
+          { name: "#", totalsRowLabel: "សរុប (TOTAL):", filterButton: true },
+          { name: "Item Name", filterButton: true },
+          { name: "Code", filterButton: true },
+          { name: "Type", filterButton: true },
+          { name: "Batch / Ref", filterButton: true },
+          { name: "Available Stock", totalsRowFunction: "sum", filterButton: true },
+          { name: "Unit", filterButton: true },
+          { name: "Cost ($)", filterButton: true },
+          { name: "Total Value ($)", totalsRowFunction: "sum", filterButton: true },
+          { name: "Expiry Date", filterButton: true },
+          { name: "Days Left", filterButton: true },
+          { name: "Status", filterButton: true },
+        ],
+        rows: rowsData,
+      });
+
+      ws.columns = [
+        { width: 8 },  // #
+        { width: 26 }, // Item Name
+        { width: 18 }, // Code
+        { width: 14 }, // Type
+        { width: 22 }, // Batch / Ref
+        { width: 16 }, // Stock
+        { width: 10 }, // Unit
+        { width: 14 }, // Cost ($)
+        { width: 16 }, // Total Value ($)
+        { width: 16 }, // Expiry Date
+        { width: 14 }, // Days Left
+        { width: 22 }, // Status
+      ];
+
+      rowsData.forEach((_, i) => {
+        const r = ws.getRow(6 + i);
+        r.height = 22;
+        r.font = { name: "Arial", size: 9.5 };
+
+        r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(2).alignment = { vertical: "middle", horizontal: "left" };
+        r.getCell(3).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(4).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(5).alignment = { vertical: "middle", horizontal: "center" };
+
+        r.getCell(6).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(6).numFmt = "#,##0.00";
+        r.getCell(7).alignment = { vertical: "middle", horizontal: "center" };
+
+        r.getCell(8).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(8).numFmt = '"$"#,##0.00';
+
+        r.getCell(9).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(9).numFmt = '"$"#,##0.00';
+
+        r.getCell(10).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(11).alignment = { vertical: "middle", horizontal: "center" };
+
+        const stCell = r.getCell(12);
+        stCell.alignment = { vertical: "middle", horizontal: "center" };
+        const statusVal = String(stCell.value);
+        if (statusVal.includes("EXPIRED")) {
+          stCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFE11D48" } };
+        } else if (statusVal.includes("EXPIRING SOON")) {
+          stCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFD97706" } };
+        } else {
+          stCell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF059669" } };
+        }
+      });
+
+      const totRowIndex = 5 + rowsData.length + 1;
+      const totRow = ws.getRow(totRowIndex);
+      totRow.height = 26;
+      totRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF0F172A" } };
+      totRow.getCell(6).numFmt = "#,##0.00";
+      totRow.getCell(9).numFmt = '"$"#,##0.00';
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `expiry_report_${formatLocalDate(new Date())}_${Date.now()}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export expiry excel failed:", e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER")) {
     return (
       <div className="flex flex-col items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -664,8 +877,8 @@ export default function ReportsPage() {
         {/* Export Buttons */}
         <div className="flex items-center gap-2.5">
           <button
-            onClick={exportExcel}
-            disabled={!data || loading || exporting}
+            onClick={activeTab === "EXPIRY" ? exportExpiryExcel : exportExcel}
+            disabled={(activeTab === "EXPIRY" ? (!expiryData || expiryLoading) : (!data || loading)) || exporting}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
           >
             {exporting ? (
@@ -694,6 +907,7 @@ export default function ReportsPage() {
             { id: "PRODUCTS", label: t("reports.tabProducts"), icon: Award },
             { id: "PAYMENTS", label: t("reports.tabPayment"), icon: CreditCard },
             { id: "CASHIERS", label: t("reports.tabCashier"), icon: UserCheck },
+            { id: "EXPIRY", label: t("reports.tabExpiry"), icon: AlertTriangle },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -713,74 +927,315 @@ export default function ReportsPage() {
           })}
         </div>
 
-        {/* Date Filter Inputs */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Quick Filter Pill Buttons */}
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl">
-            <button
-              onClick={() => setQuickDate("today")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "today"
-                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-            >
-              {t("reports.today")}
-            </button>
-            <button
-              onClick={() => setQuickDate("week")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "week"
-                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-            >
-              {t("reports.sevenDays")}
-            </button>
-            <button
-              onClick={() => setQuickDate("month")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "month"
-                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-            >
-              {t("reports.thisMonth")}
-            </button>
-            <button
-              onClick={() => setQuickDate("all")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "all"
-                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-            >
-              {t("reports.allTime")}
-            </button>
-          </div>
+        {/* Date Filter Inputs (Only for Sales Analytics Tabs) */}
+        {activeTab !== "EXPIRY" && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Quick Filter Pill Buttons */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl">
+              <button
+                onClick={() => setQuickDate("today")}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "today"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+              >
+                {t("reports.today")}
+              </button>
+              <button
+                onClick={() => setQuickDate("week")}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "week"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+              >
+                {t("reports.sevenDays")}
+              </button>
+              <button
+                onClick={() => setQuickDate("month")}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "month"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+              >
+                {t("reports.thisMonth")}
+              </button>
+              <button
+                onClick={() => setQuickDate("all")}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${quickFilter === "all"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-sm font-semibold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
+              >
+                {t("reports.allTime")}
+              </button>
+            </div>
 
-          {/* Date Pickers */}
-          <div className="flex items-center gap-1.5">
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => {
-                setQuickFilter("custom");
-                setDateRange({ ...dateRange, start: e.target.value });
-              }}
-              className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
-            />
-            <span className="text-slate-400 text-xs">{t("reports.to")}</span>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => {
-                setQuickFilter("custom");
-                setDateRange({ ...dateRange, end: e.target.value });
-              }}
-              className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
-            />
+            {/* Date Pickers */}
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => {
+                  setQuickFilter("custom");
+                  setDateRange({ ...dateRange, start: e.target.value });
+                }}
+                className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              />
+              <span className="text-slate-400 text-xs">{t("reports.to")}</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => {
+                  setQuickFilter("custom");
+                  setDateRange({ ...dateRange, end: e.target.value });
+                }}
+                className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {loading ? (
+      {activeTab === "EXPIRY" ? (
+        /* TAB 5: EXPIRY & FEFO TRACKING */
+        <div className="space-y-6">
+          {/* 4 Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. Total Monitored */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.totalMonitored")}</span>
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Package size={18} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-2">{expiryData?.summary.totalMonitored || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("report.expire")}</p>
+            </div>
+
+            {/* 2. Expired */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.expiredItems")}</span>
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <ShieldAlert size={18} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-2">{expiryData?.summary.expiredCount || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {t("report.loseprice")}: ${Number(expiryData?.summary.expiredValue || 0).toFixed(2)}
+              </p>
+            </div>
+
+            {/* 3. Expiring Soon */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.expiringSoon")}</span>
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Clock size={18} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-2">{expiryData?.summary.expiringSoonCount || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {t("reports.atRiskValue")}: ${Number(expiryData?.summary.expiringSoonValue || 0).toFixed(2)}
+              </p>
+            </div>
+
+            {/* 4. Valid */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t("reports.validItems")}</span>
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <CheckCircle2 size={18} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-2">{expiryData?.summary.validCount || 0}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("reports.validCondition")}</p>
+            </div>
+          </div>
+
+          {/* Expiry Filters & Search */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1 min-w-64">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="ស្វែងរកតាមឈ្មោះទំនិញ, កូដ, ឬលេខ PO..."
+                  value={expirySearch}
+                  onChange={(e) => setExpirySearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              {/* Type Filter */}
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                {[
+                  { id: "ALL", label: "ទាំងអស់" },
+                  { id: "PRODUCT", label: "ទំនិញ (Product)" },
+                  { id: "INGREDIENT", label: "គ្រឿងផ្សំ (Ingredient)" },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setExpiryTypeFilter(t.id as any)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${expiryTypeFilter === t.id
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                      }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                {[
+                  { id: "ALL", label: "គ្រប់ស្ថានភាព" },
+                  { id: "EXPIRED", label: "🔴 ផុតកំណត់" },
+                  { id: "EXPIRING_SOON", label: "🟡 ជិតផុត" },
+                  { id: "VALID", label: "🟢 សុវត្ថិភាព" },
+                ].map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => setExpiryStatusFilter(s.id as any)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${expiryStatusFilter === s.id
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                      }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Data Table */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={18} className="text-amber-500" />
+                <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                  តារាងទំនិញ និងគ្រឿងផ្សំ (តម្រៀបតាមថ្ងៃផុតកំណត់មុនគេ - FEFO)
+                </h2>
+              </div>
+              <span className="text-xs text-slate-500 font-medium">
+                {expiryData?.items.length || 0} មុខទំនិញ
+              </span>
+            </div>
+
+            {expiryLoading ? (
+              <div className="flex items-center justify-center h-52">
+                <Loader2 className="animate-spin text-indigo-600" size={32} />
+              </div>
+            ) : !expiryData || expiryData.items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-52 text-slate-400 gap-2">
+                <Package size={36} className="opacity-40" />
+                <p className="text-sm">មិនមានទិន្នន័យទំនិញផុតកំណត់ឡើយ</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center w-12">#</th>
+                      <th className="px-4 py-3 text-left">ឈ្មោះមុខទំនិញ / គ្រឿងផ្សំ</th>
+                      <th className="px-4 py-3 text-center">ប្រភេទ</th>
+                      <th className="px-4 py-3 text-center">កូដបាច់ / PO</th>
+                      <th className="px-4 py-3 text-right">ស្តុកនៅសល់</th>
+                      <th className="px-4 py-3 text-right">តម្លៃដើម</th>
+                      <th className="px-4 py-3 text-right">តម្លៃសរុប</th>
+                      <th className="px-4 py-3 text-center">ថ្ងៃផុតកំណត់</th>
+                      <th className="px-4 py-3 text-center">រយៈពេលនៅសល់</th>
+                      <th className="px-4 py-3 text-center">ស្ថានភាព</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {expiryData.items.map((item, idx) => {
+                      const isExpired = item.status === "EXPIRED";
+                      const isExpiringSoon = item.status === "EXPIRING_SOON";
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`transition-colors ${isExpired
+                            ? "bg-rose-50/40 hover:bg-rose-50 dark:bg-rose-950/20 dark:hover:bg-rose-950/30"
+                            : isExpiringSoon
+                              ? "bg-amber-50/40 hover:bg-amber-50 dark:bg-amber-950/20 dark:hover:bg-amber-950/30"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            }`}
+                        >
+                          <td className="px-4 py-3 text-center text-slate-400 font-mono">{idx + 1}</td>
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
+                              <p className="text-[10px] font-mono text-slate-400 mt-0.5">{item.code}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === "PRODUCT"
+                              ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                              : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                              }`}>
+                              {item.type === "PRODUCT" ? "Product" : "Ingredient"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono text-slate-600 dark:text-slate-300">
+                            {item.batchRef}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-200">
+                            {Number(item.stock).toFixed(item.unit === "pcs" ? 0 : 2)} <span className="text-xs text-slate-400 font-normal">{item.unit}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right text-slate-500 font-mono">
+                            ${Number(item.cost).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-slate-100 font-mono">
+                            ${(Number(item.stock) * Number(item.cost)).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono font-medium text-slate-700 dark:text-slate-300">
+                            {item.expiryDate || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-center font-semibold">
+                            {item.daysRemaining != null ? (
+                              isExpired ? (
+                                <span className="text-rose-600 dark:text-rose-400">
+                                  ហួស {Math.abs(item.daysRemaining)} ថ្ងៃ
+                                </span>
+                              ) : isExpiringSoon ? (
+                                <span className="text-amber-600 dark:text-amber-400">
+                                  សល់ {item.daysRemaining} ថ្ងៃ
+                                </span>
+                              ) : (
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  សល់ {item.daysRemaining} ថ្ងៃ
+                                </span>
+                              )
+                            ) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${isExpired
+                              ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 border border-rose-300 dark:border-rose-800"
+                              : isExpiringSoon
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-300 dark:border-amber-800"
+                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
+                              }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isExpired ? "bg-rose-500 animate-pulse" : isExpiringSoon ? "bg-amber-500" : "bg-emerald-500"
+                                }`} />
+                              {isExpired ? "ផុតកំណត់" : isExpiringSoon ? "ជិតផុតកំណត់" : "សុវត្ថិភាព"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : loading ? (
         <div className="flex items-center justify-center h-48 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
           <Loader2 className="animate-spin text-indigo-500" size={28} />
         </div>
