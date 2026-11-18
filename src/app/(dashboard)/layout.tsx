@@ -19,7 +19,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace("/login");
+      window.location.href = "/login";
     } else if (!loading && user && user.permissions && user.permissions.length > 0) {
       // Check if user has permission to visit current route
       if (pathname && !user.permissions.includes(pathname)) {

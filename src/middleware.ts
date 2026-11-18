@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
 
   const isLoginPage = pathname === "/login";
 
-  // If user does not have a valid auth token and is accessing protected routes
+  // If user does not have a valid auth token and is accessing protected routes, redirect to /login
   if (!hasValidToken && !isLoginPage) {
     const loginUrl = new URL("/login", request.url);
     const response = NextResponse.redirect(loginUrl);
@@ -39,12 +39,6 @@ export function middleware(request: NextRequest) {
       response.cookies.delete("token");
     }
     return response;
-  }
-
-  // If user is already authenticated with a valid token and visits /login, redirect to dashboard
-  if (hasValidToken && isLoginPage) {
-    const dashboardUrl = new URL("/", request.url);
-    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();

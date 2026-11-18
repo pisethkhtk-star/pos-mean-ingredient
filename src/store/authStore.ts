@@ -70,6 +70,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         const data = await res.json();
         set({ user: data.user, loading: false });
       } else {
+        if (typeof document !== "undefined") {
+          document.cookie = "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+        }
         set({ user: null, loading: false });
       }
     } catch (err) {
